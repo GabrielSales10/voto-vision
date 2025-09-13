@@ -17,6 +17,7 @@ export type Database = {
       bairros: {
         Row: {
           ativo: boolean
+          cidade_id: string | null
           created_at: string
           id: string
           nome: string
@@ -24,6 +25,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          cidade_id?: string | null
           created_at?: string
           id?: string
           nome: string
@@ -31,12 +33,20 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          cidade_id?: string | null
           created_at?: string
           id?: string
           nome?: string
           regional_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "bairros_cidade_id_fkey"
+            columns: ["cidade_id"]
+            isOneToOne: false
+            referencedRelation: "cidades"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bairros_regional_id_fkey"
             columns: ["regional_id"]
@@ -46,8 +56,44 @@ export type Database = {
           },
         ]
       }
+      candidate_anos: {
+        Row: {
+          ano: number
+          candidato_id: string
+          created_at: string
+          id: string
+          votos_por_bairro_file: string | null
+          votos_por_secao_file: string | null
+        }
+        Insert: {
+          ano: number
+          candidato_id: string
+          created_at?: string
+          id?: string
+          votos_por_bairro_file?: string | null
+          votos_por_secao_file?: string | null
+        }
+        Update: {
+          ano?: number
+          candidato_id?: string
+          created_at?: string
+          id?: string
+          votos_por_bairro_file?: string | null
+          votos_por_secao_file?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_anos_candidato_id_fkey"
+            columns: ["candidato_id"]
+            isOneToOne: false
+            referencedRelation: "candidatos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       candidate_bairros: {
         Row: {
+          ano: number | null
           bairro_nome: string
           candidato_id: string | null
           created_at: string | null
@@ -57,6 +103,7 @@ export type Database = {
           votos: number | null
         }
         Insert: {
+          ano?: number | null
           bairro_nome: string
           candidato_id?: string | null
           created_at?: string | null
@@ -66,6 +113,7 @@ export type Database = {
           votos?: number | null
         }
         Update: {
+          ano?: number | null
           bairro_nome?: string
           candidato_id?: string | null
           created_at?: string | null
@@ -93,6 +141,7 @@ export type Database = {
       }
       candidate_secoes: {
         Row: {
+          ano: number | null
           bairro: string | null
           candidato_id: string | null
           created_at: string | null
@@ -105,6 +154,7 @@ export type Database = {
           zona: number
         }
         Insert: {
+          ano?: number | null
           bairro?: string | null
           candidato_id?: string | null
           created_at?: string | null
@@ -117,6 +167,7 @@ export type Database = {
           zona: number
         }
         Update: {
+          ano?: number | null
           bairro?: string | null
           candidato_id?: string | null
           created_at?: string | null
@@ -191,6 +242,24 @@ export type Database = {
           },
         ]
       }
+      cidades: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       partidos: {
         Row: {
           ativo: boolean
@@ -227,6 +296,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          login: string | null
           nome: string
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
@@ -237,6 +307,7 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          login?: string | null
           nome: string
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
@@ -247,6 +318,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          login?: string | null
           nome?: string
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string

@@ -20,6 +20,7 @@ interface Profile {
   role: UserRole;
   ativo: boolean;
   created_at: string;
+  login?: string;
 }
 
 const UsuariosManager = () => {
@@ -30,6 +31,7 @@ const UsuariosManager = () => {
   const { toast } = useToast();
 
   // Form state
+  const [login, setLogin] = useState('');
   const [email, setEmail] = useState('');
   const [nome, setNome] = useState('');
   const [password, setPassword] = useState('');
@@ -61,6 +63,7 @@ const UsuariosManager = () => {
   };
 
   const resetForm = () => {
+    setLogin('');
     setEmail('');
     setNome('');
     setPassword('');
@@ -71,6 +74,7 @@ const UsuariosManager = () => {
   const openDialog = (usuario?: Profile) => {
     if (usuario) {
       setEditingUsuario(usuario);
+      setLogin(usuario.login || '');
       setEmail(usuario.email);
       setNome(usuario.nome);
       setRole(usuario.role);
@@ -90,6 +94,7 @@ const UsuariosManager = () => {
         const { error } = await supabase
           .from('profiles')
           .update({
+            login,
             nome,
             role,
           })
@@ -108,6 +113,7 @@ const UsuariosManager = () => {
           password,
           options: {
             data: {
+              login,
               nome,
               role,
             }
@@ -236,6 +242,17 @@ const UsuariosManager = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="login">Login</Label>
+                  <Input
+                    id="login"
+                    value={login}
+                    onChange={(e) => setLogin(e.target.value)}
+                    placeholder="login_usuario"
+                    disabled={!!editingUsuario}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
@@ -311,6 +328,7 @@ const UsuariosManager = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
+              <TableHead>Login</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Função</TableHead>
               <TableHead>Status</TableHead>
@@ -322,6 +340,7 @@ const UsuariosManager = () => {
             {usuarios.map((usuario) => (
               <TableRow key={usuario.id}>
                 <TableCell className="font-medium">{usuario.nome}</TableCell>
+                <TableCell>{usuario.login || 'N/A'}</TableCell>
                 <TableCell>{usuario.email}</TableCell>
                 <TableCell>
                   <Badge variant={getRoleColor(usuario.role)} className="flex items-center gap-1 w-fit">
@@ -363,7 +382,7 @@ const UsuariosManager = () => {
             ))}
             {usuarios.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   Nenhum usuário encontrado.
                 </TableCell>
               </TableRow>
