@@ -149,7 +149,7 @@ const CandidatoDashboard = () => {
               </p>
             </div>
           </div>
-          <Button variant="hero">
+          <Button variant="default">
             <Eye className="w-4 h-4 mr-2" />
             Ver Relatório Completo
           </Button>

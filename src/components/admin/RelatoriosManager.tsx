@@ -101,29 +101,8 @@ const RelatoriosManager = () => {
     }
   ];
 
-  const mockRecentReports = [
-    {
-      id: 1,
-      candidato: 'João Silva',
-      tipo: 'Completo',
-      data: '2024-01-15',
-      status: 'Concluído'
-    },
-    {
-      id: 2,
-      candidato: 'Maria Santos',
-      tipo: 'Resumo',
-      data: '2024-01-14',
-      status: 'Concluído'
-    },
-    {
-      id: 3,
-      candidato: 'Pedro Costa',
-      tipo: 'Estratégico',
-      data: '2024-01-13',
-      status: 'Concluído'
-    }
-  ];
+  // Dados reais de relatórios serão implementados quando houver integração com sistema de relatórios
+  const recentReports: any[] = [];
 
   if (loading) {
     return (
@@ -211,28 +190,38 @@ const RelatoriosManager = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {mockRecentReports.map((report) => (
-              <div key={report.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-primary" />
-                  <div>
-                    <div className="font-medium">{report.candidato}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Relatório {report.tipo} • {new Date(report.data).toLocaleDateString('pt-BR')}
+          {recentReports.length === 0 ? (
+            <div className="text-center py-12">
+              <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Nenhum relatório encontrado</h3>
+              <p className="text-muted-foreground">
+                Os relatórios gerados aparecerão aqui após serem criados.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentReports.map((report) => (
+                <div key={report.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-primary" />
+                    <div>
+                      <div className="font-medium">{report.candidato}</div>
+                      <div className="text-sm text-muted-foreground">
+                        Relatório {report.tipo} • {new Date(report.data).toLocaleDateString('pt-BR')}
+                      </div>
                     </div>
                   </div>
+                  <div className="flex items-center gap-3">
+                    <Badge variant="default">{report.status}</Badge>
+                    <Button variant="outline" size="sm">
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Badge variant="default">{report.status}</Badge>
-                  <Button variant="outline" size="sm">
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -42,56 +42,76 @@ const GeographyCitiesManager = () => {
     try {
       setLoading(true);
 
-      // Buscar cidades e bairros dos candidatos
-      const { data: bairrosData, error: bairrosError } = await supabase
-        .from('candidate_bairros')
+      // Buscar candidatos com seus bairros para extrair as cidades
+      const { data: candidatosData, error: candidatosError } = await supabase
+        .from('candidatos')
         .select(`
-          bairro_nome,
-          regional_id,
-          regional:regionais(id, nome)
-        `);
+          id,
+          nome,
+          candidate_bairros!inner (
+            bairro_nome,
+            regional_id,
+            regional:regionais(id, nome)
+          )
+        `)
+        .eq('ativo', true);
 
-      if (bairrosError) throw bairrosError;
+      if (candidatosError) throw candidatosError;
 
-      // Agrupar por cidade (inferida do nome do bairro ou usar uma cidade padrão)
+      // Criar um mapa de cidades baseado nos bairros dos candidatos
       const cityMap = new Map<string, CityBairro[]>();
       const bairroRegionalMapTemp: Record<string, string> = {};
 
-      bairrosData?.forEach((bairro) => {
-        // Por enquanto, vamos usar "Cidade Principal" como cidade padrão
-        // Em uma implementação real, você poderia inferir a cidade do nome do bairro
-        const cityName = "Cidade Principal";
-        
-        if (!cityMap.has(cityName)) {
-          cityMap.set(cityName, []);
-        }
-
-        const cityBairros = cityMap.get(cityName)!;
-        const existingBairro = cityBairros.find(b => b.bairro_nome === bairro.bairro_nome);
-
-        if (existingBairro) {
-          existingBairro.count++;
-          if (bairro.regional_id && !existingBairro.regional_id) {
-            existingBairro.regional_id = bairro.regional_id;
-            existingBairro.regional_nome = bairro.regional?.nome;
+      candidatosData?.forEach((candidato) => {
+        candidato.candidate_bairros?.forEach((bairro: any) => {
+          // Inferir cidade do nome do bairro - vamos usar uma lógica simples
+          // Em produção, você pode ter uma tabela de mapeamento bairro -> cidade
+          let cityName = "Fortaleza"; // Cidade padrão
+          
+          // Lógica simples para inferir cidade baseada no nome do bairro
+          const bairroLower = bairro.bairro_nome.toLowerCase();
+          if (bairroLower.includes('recife') || bairroLower.includes('boa viagem') || 
+              bairroLower.includes('piedade') || bairroLower.includes('imbiribeira')) {
+            cityName = "Recife";
+          } else if (bairroLower.includes('salvador') || bairroLower.includes('barra') || 
+                     bairroLower.includes('pelourinho') || bairroLower.includes('pituba')) {
+            cityName = "Salvador";
+          } else if (bairroLower.includes('brasília') || bairroLower.includes('asa norte') || 
+                     bairroLower.includes('asa sul') || bairroLower.includes('plano piloto')) {
+            cityName = "Brasília";
           }
-        } else {
-          cityBairros.push({
-            bairro_nome: bairro.bairro_nome,
-            count: 1,
-            regional_id: bairro.regional_id || undefined,
-            regional_nome: bairro.regional?.nome || undefined
-          });
-        }
+          
+          if (!cityMap.has(cityName)) {
+            cityMap.set(cityName, []);
+          }
 
-        if (bairro.regional_id) {
-          bairroRegionalMapTemp[bairro.bairro_nome] = bairro.regional_id;
-        }
+          const cityBairros = cityMap.get(cityName)!;
+          const existingBairro = cityBairros.find(b => b.bairro_nome === bairro.bairro_nome);
+
+          if (existingBairro) {
+            existingBairro.count++;
+            if (bairro.regional_id && !existingBairro.regional_id) {
+              existingBairro.regional_id = bairro.regional_id;
+              existingBairro.regional_nome = bairro.regional?.nome;
+            }
+          } else {
+            cityBairros.push({
+              bairro_nome: bairro.bairro_nome,
+              count: 1,
+              regional_id: bairro.regional_id || undefined,
+              regional_nome: bairro.regional?.nome || undefined
+            });
+          }
+
+          if (bairro.regional_id) {
+            bairroRegionalMapTemp[bairro.bairro_nome] = bairro.regional_id;
+          }
+        });
       });
 
       const citiesArray = Array.from(cityMap.entries()).map(([nome, bairros]) => ({
         nome,
-        bairros: bairros.sort ((a, b) => a.bairro_nome.localeCompare(b.bairro_nome))
+        bairros: bairros.sort((a, b) => a.bairro_nome.localeCompare(b.bairro_nome))
       }));
 
       setCities(citiesArray);
