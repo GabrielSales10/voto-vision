@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import PartidosManager from '@/components/admin/PartidosManager';
-import MultiYearCandidateManager from '@/components/admin/MultiYearCandidateManager';
+import SimpleCandidateManager from '@/components/admin/SimpleCandidateManager';
 import UsuariosManager from '@/components/admin/UsuariosManager';
 import GeografiaManager from '@/components/admin/GeografiaManager';
 import RelatoriosManager from '@/components/admin/RelatoriosManager';
@@ -173,7 +173,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="candidatos">
-            <MultiYearCandidateManager />
+            <SimpleCandidateManager />
           </TabsContent>
 
           <TabsContent value="usuarios">
