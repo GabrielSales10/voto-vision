@@ -47,6 +47,65 @@ interface YearData {
   bairroFile: File | null;
 }
 
+/** Componente estável para upload de arquivo (usa useDropzone internamente) */
+function FileDropzone({
+  file,
+  onFile,
+  label,
+  helpText,
+  accept,
+}: {
+  file: File | null;
+  onFile: (file: File) => void;
+  label: string;
+  helpText?: string;
+  accept?: { [mime: string]: string[] };
+}) {
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      const f = acceptedFiles[0];
+      if (!f) return;
+      // valida extensão .csv quando necessário
+      if (accept && accept['text/csv'] && !f.name.toLowerCase().endsWith('.csv')) {
+        // não temos toast aqui; a validação principal fica no pai (já tem)
+        return;
+      }
+      onFile(f);
+    },
+    [onFile, accept]
+  );
+
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+    accept,
+    maxFiles: 1,
+  });
+
+  return (
+    <div>
+      <Label>{label}</Label>
+      <div
+        {...getRootProps()}
+        className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400"
+      >
+        <input {...getInputProps()} />
+        {file ? (
+          <div className="flex items-center justify-center space-x-2">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <span className="text-sm">{file.name}</span>
+          </div>
+        ) : (
+          <div>
+            <Upload className="w-6 h-6 mx-auto text-gray-400 mb-2" />
+            <p className="text-sm">Clique ou arraste o arquivo</p>
+            {helpText && <p className="text-xs text-gray-500">{helpText}</p>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const MultiYearCandidateManager = () => {
   const navigate = useNavigate();
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
@@ -322,6 +381,23 @@ const MultiYearCandidateManager = () => {
     }
   };
 
+  // Dropzone para foto (apenas 1 instância)
+  const onDropPhoto = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      setFoto(file);
+      const reader = new FileReader();
+      reader.onload = () => setFotoPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  }, []);
+
+  const { getRootProps: getPhotoRootProps, getInputProps: getPhotoInputProps } = useDropzone({
+    onDrop: onDropPhoto,
+    accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.gif'] },
+    maxFiles: 1
+  });
+
   const toggleCandidatoStatus = async (id: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
@@ -343,73 +419,6 @@ const MultiYearCandidateManager = () => {
         variant: "destructive"
       });
     }
-  };
-
-  // Dropzone para foto
-  const onDropPhoto = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      setFoto(file);
-      const reader = new FileReader();
-      reader.onload = () => setFotoPreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  }, []);
-
-  const { getRootProps: getPhotoRootProps, getInputProps: getPhotoInputProps } = useDropzone({
-    onDrop: onDropPhoto,
-    accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.gif'] },
-    maxFiles: 1
-  });
-
-  // Dropzone para arquivos de seção por ano
-  const createSecaoDropzone = (year: number) => {
-    const onDrop = useCallback((acceptedFiles: File[]) => {
-      const file = acceptedFiles[0];
-      if (file && file.name.endsWith('.csv')) {
-        setYearDataMap(prev => ({
-          ...prev,
-          [year]: { ...prev[year], secaoFile: file }
-        }));
-      } else {
-        toast({
-          title: "Erro",
-          description: "Apenas arquivos CSV são aceitos",
-          variant: "destructive"
-        });
-      }
-    }, [year, toast]);
-
-    return useDropzone({
-      onDrop,
-      accept: { 'text/csv': ['.csv'] },
-      maxFiles: 1
-    });
-  };
-
-  // Dropzone para arquivos de bairro por ano
-  const createBairroDropzone = (year: number) => {
-    const onDrop = useCallback((acceptedFiles: File[]) => {
-      const file = acceptedFiles[0];
-      if (file && file.name.endsWith('.csv')) {
-        setYearDataMap(prev => ({
-          ...prev,
-          [year]: { ...prev[year], bairroFile: file }
-        }));
-      } else {
-        toast({
-          title: "Erro",
-          description: "Apenas arquivos CSV são aceitos",
-          variant: "destructive"
-        });
-      }
-    }, [year, toast]);
-
-    return useDropzone({
-      onDrop,
-      accept: { 'text/csv': ['.csv'] },
-      maxFiles: 1
-    });
   };
 
   if (loading) return <div className="text-center py-8">Carregando...</div>;
@@ -530,10 +539,7 @@ const MultiYearCandidateManager = () => {
                     <Label className="text-lg font-semibold">Arquivos de Votação por Ano</Label>
                     
                     {selectedYears.map((year) => {
-                      const secaoDropzone = createSecaoDropzone(year);
-                      const bairroDropzone = createBairroDropzone(year);
-                      const yearData = yearDataMap[year];
-                      
+                      const yearData = yearDataMap[year] || { ano: year, secaoFile: null, bairroFile: null };
                       return (
                         <Card key={year} className="p-4">
                           <CardHeader className="pb-4">
@@ -547,53 +553,38 @@ const MultiYearCandidateManager = () => {
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-0">
-                            <div>
-                              <Label>Arquivo 1: Votos por Seção {!editingId && '*'}</Label>
-                              <div 
-                                {...secaoDropzone.getRootProps()} 
-                                className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400"
-                              >
-                                <input {...secaoDropzone.getInputProps()} />
-                                {yearData?.secaoFile ? (
-                                  <div className="flex items-center justify-center space-x-2">
-                                    <CheckCircle className="w-5 h-5 text-green-500" />
-                                    <span className="text-sm">{yearData.secaoFile.name}</span>
-                                  </div>
-                                ) : (
-                                  <div>
-                                    <Upload className="w-6 h-6 mx-auto text-gray-400 mb-2" />
-                                    <p className="text-sm">Clique ou arraste o arquivo CSV</p>
-                                    <p className="text-xs text-gray-500">
-                                      Zona, Seção, Seções Agregadas, Votos, Local de Votação, Endereço, Bairro, Cidade
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            <div>
-                              <Label>Arquivo 2: Votos por Bairro {!editingId && '*'}</Label>
-                              <div 
-                                {...bairroDropzone.getRootProps()} 
-                                className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400"
-                              >
-                                <input {...bairroDropzone.getInputProps()} />
-                                {yearData?.bairroFile ? (
-                                  <div className="flex items-center justify-center space-x-2">
-                                    <CheckCircle className="w-5 h-5 text-green-500" />
-                                    <span className="text-sm">{yearData.bairroFile.name}</span>
-                                  </div>
-                                ) : (
-                                  <div>
-                                    <Upload className="w-6 h-6 mx-auto text-gray-400 mb-2" />
-                                    <p className="text-sm">Clique ou arraste o arquivo CSV</p>
-                                    <p className="text-xs text-gray-500">
-                                      Bairro, Votos, % Votos Obtidos, Cidade
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+                            <FileDropzone
+                              file={yearData.secaoFile}
+                              onFile={(f) => {
+                                if (!f.name.toLowerCase().endsWith('.csv')) {
+                                  toast({ title: "Erro", description: "Apenas arquivos CSV são aceitos", variant: "destructive" });
+                                  return;
+                                }
+                                setYearDataMap((prev) => ({
+                                  ...prev,
+                                  [year]: { ...(prev[year] || { ano: year, secaoFile: null, bairroFile: null }), secaoFile: f },
+                                }));
+                              }}
+                              label={`Arquivo 1: Votos por Seção ${!editingId ? '*' : ''}`}
+                              helpText="Zona, Seção, Seções Agregadas, Votos, Local, Endereço, Bairro, Cidade"
+                              accept={{ 'text/csv': ['.csv'] }}
+                            />
+                            <FileDropzone
+                              file={yearData.bairroFile}
+                              onFile={(f) => {
+                                if (!f.name.toLowerCase().endsWith('.csv')) {
+                                  toast({ title: "Erro", description: "Apenas arquivos CSV são aceitos", variant: "destructive" });
+                                  return;
+                                }
+                                setYearDataMap((prev) => ({
+                                  ...prev,
+                                  [year]: { ...(prev[year] || { ano: year, secaoFile: null, bairroFile: null }), bairroFile: f },
+                                }));
+                              }}
+                              label={`Arquivo 2: Votos por Bairro ${!editingId ? '*' : ''}`}
+                              helpText="Bairro, Votos, % Votos Obtidos, Cidade"
+                              accept={{ 'text/csv': ['.csv'] }}
+                            />
                           </CardContent>
                         </Card>
                       );
