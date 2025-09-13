@@ -46,6 +46,98 @@ export type Database = {
           },
         ]
       }
+      candidate_bairros: {
+        Row: {
+          bairro_nome: string
+          candidato_id: string | null
+          created_at: string | null
+          id: string
+          percentual_votos: number | null
+          regional_id: string | null
+          votos: number | null
+        }
+        Insert: {
+          bairro_nome: string
+          candidato_id?: string | null
+          created_at?: string | null
+          id?: string
+          percentual_votos?: number | null
+          regional_id?: string | null
+          votos?: number | null
+        }
+        Update: {
+          bairro_nome?: string
+          candidato_id?: string | null
+          created_at?: string | null
+          id?: string
+          percentual_votos?: number | null
+          regional_id?: string | null
+          votos?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_bairros_candidato_id_fkey"
+            columns: ["candidato_id"]
+            isOneToOne: false
+            referencedRelation: "candidatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_bairros_regional_id_fkey"
+            columns: ["regional_id"]
+            isOneToOne: false
+            referencedRelation: "regionais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate_secoes: {
+        Row: {
+          bairro: string | null
+          candidato_id: string | null
+          created_at: string | null
+          endereco_local: string | null
+          id: string
+          local_votacao: string | null
+          secao: number
+          secoes_agregadas: string | null
+          votos: number | null
+          zona: number
+        }
+        Insert: {
+          bairro?: string | null
+          candidato_id?: string | null
+          created_at?: string | null
+          endereco_local?: string | null
+          id?: string
+          local_votacao?: string | null
+          secao: number
+          secoes_agregadas?: string | null
+          votos?: number | null
+          zona: number
+        }
+        Update: {
+          bairro?: string | null
+          candidato_id?: string | null
+          created_at?: string | null
+          endereco_local?: string | null
+          id?: string
+          local_votacao?: string | null
+          secao?: number
+          secoes_agregadas?: string | null
+          votos?: number | null
+          zona?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_secoes_candidato_id_fkey"
+            columns: ["candidato_id"]
+            isOneToOne: false
+            referencedRelation: "candidatos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       candidatos: {
         Row: {
           ativo: boolean
@@ -56,7 +148,10 @@ export type Database = {
           numero: number | null
           partido_id: string
           updated_at: string
+          usa_regionais: boolean | null
           user_id: string | null
+          votos_por_bairro_file: string | null
+          votos_por_secao_file: string | null
         }
         Insert: {
           ativo?: boolean
@@ -67,7 +162,10 @@ export type Database = {
           numero?: number | null
           partido_id: string
           updated_at?: string
+          usa_regionais?: boolean | null
           user_id?: string | null
+          votos_por_bairro_file?: string | null
+          votos_por_secao_file?: string | null
         }
         Update: {
           ativo?: boolean
@@ -78,7 +176,10 @@ export type Database = {
           numero?: number | null
           partido_id?: string
           updated_at?: string
+          usa_regionais?: boolean | null
           user_id?: string | null
+          votos_por_bairro_file?: string | null
+          votos_por_secao_file?: string | null
         }
         Relationships: [
           {

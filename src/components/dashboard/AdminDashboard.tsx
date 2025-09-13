@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,51 +8,74 @@ import {
   Vote, 
   Building2, 
   MapPin, 
-  Upload, 
   FileText,
   BarChart3,
   TrendingUp
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import PartidosManager from '@/components/admin/PartidosManager';
 import CandidatosManager from '@/components/admin/CandidatosManager';
 import UsuariosManager from '@/components/admin/UsuariosManager';
 import GeografiaManager from '@/components/admin/GeografiaManager';
-import UploadVotacao from '@/components/admin/UploadVotacao';
 import RelatoriosManager from '@/components/admin/RelatoriosManager';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
 
-  const stats = [
+  const [stats, setStats] = useState([
     {
       title: 'Total de Candidatos',
-      value: '24',
+      value: '0',
       icon: Users,
       color: 'text-primary',
       bgColor: 'bg-primary/10'
     },
     {
       title: 'Partidos Ativos',
-      value: '8',
+      value: '0',
       icon: Building2,
       color: 'text-success',
       bgColor: 'bg-success/10'
     },
     {
       title: 'Votos Processados',
-      value: '156.8K',
+      value: '0',
       icon: Vote,
       color: 'text-warning',
       bgColor: 'bg-warning/10'
     },
     {
       title: 'Regionais Mapeadas',
-      value: '12',
+      value: '0',
       icon: MapPin,
       color: 'text-accent',
       bgColor: 'bg-accent/10'
     }
-  ];
+  ]);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const { data: candidatos } = await supabase.from('candidatos').select('id', { count: 'exact' });
+      const { data: partidos } = await supabase.from('partidos').select('id', { count: 'exact' });
+      const { data: votacao } = await supabase.from('votacao').select('votos');
+      const { data: regionais } = await supabase.from('regionais').select('id', { count: 'exact' });
+      
+      const totalVotos = votacao?.reduce((sum, v) => sum + (v.votos || 0), 0) || 0;
+      
+      setStats([
+        { ...stats[0], value: candidatos?.length?.toString() || '0' },
+        { ...stats[1], value: partidos?.length?.toString() || '0' },
+        { ...stats[2], value: totalVotos > 1000 ? `${(totalVotos/1000).toFixed(1)}K` : totalVotos.toString() },
+        { ...stats[3], value: regionais?.length?.toString() || '0' }
+      ]);
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas:', error);
+    }
+  };
 
   return (
     <DashboardLayout title="Painel Administrativo">
@@ -67,13 +90,12 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="partidos">Partidos</TabsTrigger>
             <TabsTrigger value="candidatos">Candidatos</TabsTrigger>
             <TabsTrigger value="usuarios">Usuários</TabsTrigger>
             <TabsTrigger value="geografia">Geografia</TabsTrigger>
-            <TabsTrigger value="upload">Upload</TabsTrigger>
             <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
           </TabsList>
 
@@ -106,7 +128,7 @@ const AdminDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Button 
                     variant="outline" 
                     className="h-24 flex flex-col gap-2"
@@ -114,14 +136,6 @@ const AdminDashboard = () => {
                   >
                     <Users className="w-8 h-8" />
                     Novo Candidato
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="h-24 flex flex-col gap-2"
-                    onClick={() => setActiveTab('upload')}
-                  >
-                    <Upload className="w-8 h-8" />
-                    Upload Votação
                   </Button>
                   <Button 
                     variant="outline" 
@@ -145,20 +159,9 @@ const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                    <div className="w-2 h-2 bg-success rounded-full"></div>
-                    <span className="text-sm">Upload de votação processado - Eleição 2024</span>
-                    <span className="text-xs text-muted-foreground ml-auto">há 2 horas</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                    <div className="w-2 h-2 bg-primary rounded-full"></div>
-                    <span className="text-sm">Novo candidato cadastrado - João Silva</span>
-                    <span className="text-xs text-muted-foreground ml-auto">há 5 horas</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                    <div className="w-2 h-2 bg-warning rounded-full"></div>
-                    <span className="text-sm">Relatório gerado - Análise Regional</span>
-                    <span className="text-xs text-muted-foreground ml-auto">ontem</span>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>Nenhuma atividade recente</p>
                   </div>
                 </div>
               </CardContent>
@@ -179,10 +182,6 @@ const AdminDashboard = () => {
 
           <TabsContent value="geografia">
             <GeografiaManager />
-          </TabsContent>
-
-          <TabsContent value="upload">
-            <UploadVotacao />
           </TabsContent>
 
           <TabsContent value="relatorios">

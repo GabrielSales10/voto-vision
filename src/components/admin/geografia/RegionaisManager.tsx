@@ -13,7 +13,7 @@ const RegionaisManager = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [nome, setNome] = useState('');
-  const [sigla, setSigla] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -36,19 +36,45 @@ const RegionaisManager = () => {
     }
   };
 
+  const resetForm = () => {
+    setNome('');
+    setEditingId(null);
+  };
+
+  const openDialog = (regional?: any) => {
+    if (regional) {
+      setEditingId(regional.id);
+      setNome(regional.nome);
+    } else {
+      resetForm();
+    }
+    setDialogOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase
-        .from('regionais')
-        .insert([{ nome, sigla }]);
+      if (editingId) {
+        const { error } = await supabase
+          .from('regionais')
+          .update({ nome })
+          .eq('id', editingId);
+        
+        if (error) throw error;
+        
+        toast({ title: "Sucesso", description: "Regional atualizada com sucesso!" });
+      } else {
+        const { error } = await supabase
+          .from('regionais')
+          .insert([{ nome }]);
 
-      if (error) throw error;
+        if (error) throw error;
+        
+        toast({ title: "Sucesso", description: "Regional criada com sucesso!" });
+      }
       
-      toast({ title: "Sucesso", description: "Regional criada com sucesso!" });
       setDialogOpen(false);
-      setNome('');
-      setSigla('');
+      resetForm();
       fetchRegionais();
     } catch (error: any) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -63,28 +89,30 @@ const RegionaisManager = () => {
         <h3 className="text-lg font-semibold">Regionais</h3>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="w-4 h-4 mr-2" />Nova Regional</Button>
+            <Button onClick={() => openDialog()}><Plus className="w-4 h-4 mr-2" />Nova Regional</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Nova Regional</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingId ? 'Editar Regional' : 'Nova Regional'}</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div><Label>Nome</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} required /></div>
-              <div><Label>Sigla</Label><Input value={sigla} onChange={(e) => setSigla(e.target.value)} /></div>
-              <Button type="submit">Criar</Button>
+              <Button type="submit">{editingId ? 'Atualizar' : 'Criar'}</Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
       <Table>
         <TableHeader>
-          <TableRow><TableHead>Nome</TableHead><TableHead>Sigla</TableHead><TableHead>Ações</TableHead></TableRow>
+          <TableRow><TableHead>Nome</TableHead><TableHead>Ações</TableHead></TableRow>
         </TableHeader>
         <TableBody>
           {regionais.map((regional) => (
             <TableRow key={regional.id}>
               <TableCell>{regional.nome}</TableCell>
-              <TableCell>{regional.sigla}</TableCell>
-              <TableCell><Button variant="outline" size="sm"><Edit className="w-4 h-4" /></Button></TableCell>
+              <TableCell>
+                <Button variant="outline" size="sm" onClick={() => openDialog(regional)}>
+                  <Edit className="w-4 h-4" />
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
