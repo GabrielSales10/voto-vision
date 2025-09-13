@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import AdminDashboard from '@/components/dashboard/AdminDashboard';
 import PresidenteDashboard from '@/components/dashboard/PresidenteDashboard';
-import CandidatoDashboard from '@/components/dashboard/CandidatoDashboard';
+import MultiYearCandidateManager from "@/components/admin/MultiYearCandidateManager";
 
 const Dashboard = () => {
   const { user, profile, loading } = useAuth();
@@ -26,7 +26,7 @@ const Dashboard = () => {
     case 'presidente':
       return <PresidenteDashboard />;
     case 'candidato':
-      return <CandidatoDashboard />;
+      return <MultiYearCandidateManager />;
     default:
       return <Navigate to="/auth" replace />;
   }
