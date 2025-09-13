@@ -260,6 +260,22 @@ const MultiYearCandidateManager = () => {
     }
   };
 
+  const onDropPhoto = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      setFoto(file);
+      const reader = new FileReader();
+      reader.onload = () => setFotoPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  }, []);
+
+  const { getRootProps: getPhotoRootProps, getInputProps: getPhotoInputProps } = useDropzone({
+    onDrop: onDropPhoto,
+    accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.gif'] },
+    maxFiles: 1
+  });
+
   const uploadPhoto = async (file: File): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${crypto.randomUUID?.() || Math.random()}.${fileExt}`;
@@ -319,23 +335,6 @@ const MultiYearCandidateManager = () => {
       });
     });
   };
-
-  // Dropzone para foto (um único hook, fora de loops)
-  const onDropPhoto = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      setFoto(file);
-      const reader = new FileReader();
-      reader.onload = () => setFotoPreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  }, []);
-
-  const { getRootProps: getPhotoRootProps, getInputProps: getPhotoInputProps } = useDropzone({
-    onDrop: onDropPhoto,
-    accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.gif'] },
-    maxFiles: 1
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -515,7 +514,7 @@ const MultiYearCandidateManager = () => {
                         <Checkbox
                           id={`year-${year}`}
                           checked={selectedYears.includes(year)}
-                          onCheckedChange={(checked) => handleYearSelection(year, !!checked)}
+                          onCheckedChange={(checked) => handleYearSelection(year, checked === true)}
                         />
                         <Label htmlFor={`year-${year}`} className="flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
