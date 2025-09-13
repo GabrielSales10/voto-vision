@@ -14,7 +14,319 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bairros: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          regional_id: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          regional_id?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          regional_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bairros_regional_id_fkey"
+            columns: ["regional_id"]
+            isOneToOne: false
+            referencedRelation: "regionais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidatos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          foto_url: string | null
+          id: string
+          nome: string
+          numero: number | null
+          partido_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          nome: string
+          numero?: number | null
+          partido_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          nome?: string
+          numero?: number | null
+          partido_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidatos_partido_id_fkey"
+            columns: ["partido_id"]
+            isOneToOne: false
+            referencedRelation: "partidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partidos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          numero: number | null
+          sigla: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          numero?: number | null
+          sigla: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          numero?: number | null
+          sigla?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          nome: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      regionais: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          sigla: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          sigla?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          sigla?: string | null
+        }
+        Relationships: []
+      }
+      secoes: {
+        Row: {
+          ativo: boolean
+          bairro_id: string | null
+          created_at: string
+          endereco: string | null
+          id: string
+          numero: number
+          zona_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          bairro_id?: string | null
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          numero: number
+          zona_id: string
+        }
+        Update: {
+          ativo?: boolean
+          bairro_id?: string | null
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          numero?: number
+          zona_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "secoes_bairro_id_fkey"
+            columns: ["bairro_id"]
+            isOneToOne: false
+            referencedRelation: "bairros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "secoes_zona_id_fkey"
+            columns: ["zona_id"]
+            isOneToOne: false
+            referencedRelation: "zonas_eleitorais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      votacao: {
+        Row: {
+          ano_eleicao: number
+          bairro_id: string | null
+          candidato_id: string
+          created_at: string
+          eleitores_aptos: number | null
+          id: string
+          regional_id: string | null
+          secao_id: string
+          turno: number
+          updated_at: string
+          votos: number
+          zona_id: string
+        }
+        Insert: {
+          ano_eleicao: number
+          bairro_id?: string | null
+          candidato_id: string
+          created_at?: string
+          eleitores_aptos?: number | null
+          id?: string
+          regional_id?: string | null
+          secao_id: string
+          turno?: number
+          updated_at?: string
+          votos?: number
+          zona_id: string
+        }
+        Update: {
+          ano_eleicao?: number
+          bairro_id?: string | null
+          candidato_id?: string
+          created_at?: string
+          eleitores_aptos?: number | null
+          id?: string
+          regional_id?: string | null
+          secao_id?: string
+          turno?: number
+          updated_at?: string
+          votos?: number
+          zona_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votacao_bairro_id_fkey"
+            columns: ["bairro_id"]
+            isOneToOne: false
+            referencedRelation: "bairros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votacao_candidato_id_fkey"
+            columns: ["candidato_id"]
+            isOneToOne: false
+            referencedRelation: "candidatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votacao_regional_id_fkey"
+            columns: ["regional_id"]
+            isOneToOne: false
+            referencedRelation: "regionais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votacao_secao_id_fkey"
+            columns: ["secao_id"]
+            isOneToOne: false
+            referencedRelation: "secoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votacao_zona_id_fkey"
+            columns: ["zona_id"]
+            isOneToOne: false
+            referencedRelation: "zonas_eleitorais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zonas_eleitorais: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string | null
+          numero: number
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string | null
+          numero: number
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string | null
+          numero?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +335,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "presidente" | "candidato"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +462,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["admin", "presidente", "candidato"],
+    },
   },
 } as const

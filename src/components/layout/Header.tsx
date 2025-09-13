@@ -28,11 +28,11 @@ const Header = () => {
         </nav>
 
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={() => window.location.href = '/auth'}>
             <LogIn className="w-4 h-4" />
             Entrar
           </Button>
-          <Button variant="hero" size="sm">
+          <Button variant="hero" size="sm" onClick={() => window.location.href = '/auth'}>
             <Users className="w-4 h-4" />
             Começar Agora
           </Button>
