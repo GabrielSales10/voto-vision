@@ -11,10 +11,11 @@ import { MapPin, Plus, Save } from "lucide-react";
 
 type Regional = { id: string; nome: string; cidade: string | null };
 
+const NO_REGIONAL_SENTINEL = "none";
+
 export default function GeografiaManager() {
   const { toast } = useToast();
 
-  // Estados separados de carregamento para não “sumir” a tela inteira
   const [loadingCities, setLoadingCities] = useState(true);
   const [loadingCityData, setLoadingCityData] = useState(false);
 
@@ -29,7 +30,7 @@ export default function GeografiaManager() {
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // 1) Carrega cidades detectadas nos CSVs
+  // 1) Carrega cidades
   useEffect(() => {
     let isCancelled = false;
     (async () => {
@@ -57,7 +58,6 @@ export default function GeografiaManager() {
 
         if (!isCancelled) {
           setCities(unique);
-          // mantém a mesma city se já estava selecionada
           setActiveCity((prev) => (prev && unique.includes(prev) ? prev : unique[0] || null));
         }
       } catch (e: any) {
@@ -69,10 +69,12 @@ export default function GeografiaManager() {
         if (!isCancelled) setLoadingCities(false);
       }
     })();
-    return () => { isCancelled = true; };
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
-  // 2) Carrega dados da cidade ativa (regionais, bairros, mapping)
+  // 2) Carrega dados da cidade ativa
   useEffect(() => {
     if (!activeCity) {
       setRegionais([]);
@@ -103,7 +105,6 @@ export default function GeografiaManager() {
         );
 
         if (bairrosList.length === 0) {
-          // fallback: usa candidate_secoes.bairro
           const secs = await supabase.from("candidate_secoes").select("bairro").eq("cidade", activeCity);
           if (secs.error) throw secs.error;
           bairrosList = Array.from(new Set((secs.data || []).map((r: any) => (r.bairro || "").trim()).filter(Boolean)));
@@ -129,7 +130,9 @@ export default function GeografiaManager() {
       }
     })();
 
-    return () => { isCancelled = true; };
+    return () => {
+      isCancelled = true;
+    };
   }, [activeCity]);
 
   const handleCreateRegional = async () => {
@@ -153,7 +156,6 @@ export default function GeografiaManager() {
     if (!activeCity) return;
     try {
       if (regionalId) {
-        // upsert vínculo
         const { error } = await supabase
           .from("regionais_bairros")
           .upsert({
@@ -163,7 +165,6 @@ export default function GeografiaManager() {
           });
         if (error) throw error;
       } else {
-        // remover vínculo
         const { error } = await supabase
           .from("regionais_bairros")
           .delete()
@@ -187,7 +188,7 @@ export default function GeografiaManager() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      {/* Coluna esquerda: lista de cidades */}
+      {/* Coluna esquerda: Cidades */}
       <div className="lg:col-span-3">
         <Card>
           <CardHeader>
@@ -217,7 +218,7 @@ export default function GeografiaManager() {
         </Card>
       </div>
 
-      {/* Coluna direita: gestão por cidade */}
+      {/* Coluna direita: Gestão por cidade */}
       <div className="lg:col-span-9">
         <Card>
           <CardHeader>
@@ -225,9 +226,7 @@ export default function GeografiaManager() {
           </CardHeader>
           <CardContent className="space-y-6">
             {errorMsg && (
-              <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
-                {errorMsg}
-              </div>
+              <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">{errorMsg}</div>
             )}
 
             {!activeCity ? (
@@ -251,12 +250,11 @@ export default function GeografiaManager() {
                   </Button>
                 </div>
 
-                {/* Loader fino para dados da cidade (sem sumir a tela) */}
                 {loadingCityData && (
                   <div className="text-sm text-muted-foreground">Carregando dados da cidade…</div>
                 )}
 
-                {/* Tabela: bairros da cidade + select de regional */}
+                {/* Tabela: bairros + select de regional */}
                 <div className="border rounded-md">
                   <Table>
                     <TableHeader>
@@ -266,29 +264,36 @@ export default function GeografiaManager() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {bairros.map((bairro) => (
-                        <TableRow key={bairro}>
-                          <TableCell className="font-medium">{bairro}</TableCell>
-                          <TableCell>
-                            <Select
-                              value={mapping[bairro] || ""}
-                              onValueChange={(val) => handleAssign(bairro, val || null)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione a regional" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="">— Sem regional —</SelectItem>
-                                {regionais.map((r) => (
-                                  <SelectItem key={r.id} value={r.id}>
-                                    {r.nome}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {bairros.map((bairro) => {
+                        const current = mapping[bairro]; // string | null
+                        const selectValue = current ?? NO_REGIONAL_SENTINEL;
+
+                        return (
+                          <TableRow key={bairro}>
+                            <TableCell className="font-medium">{bairro}</TableCell>
+                            <TableCell>
+                              <Select
+                                value={selectValue}
+                                onValueChange={(val) =>
+                                  handleAssign(bairro, val === NO_REGIONAL_SENTINEL ? null : val)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione a regional" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value={NO_REGIONAL_SENTINEL}>— Sem regional —</SelectItem>
+                                  {regionais.map((r) => (
+                                    <SelectItem key={r.id} value={r.id}>
+                                      {r.nome}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                       {bairros.length === 0 && !loadingCityData && (
                         <TableRow>
                           <TableCell colSpan={2} className="text-center text-muted-foreground py-8">
@@ -300,7 +305,6 @@ export default function GeografiaManager() {
                   </Table>
                 </div>
 
-                {/* Informativo: salvamento automático */}
                 <div className="flex justify-end">
                   <Button variant="outline" disabled>
                     <Save className="w-4 h-4 mr-2" />
