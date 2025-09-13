@@ -18,6 +18,7 @@ import MultiYearCandidateManager from '@/components/admin/MultiYearCandidateMana
 import UsuariosManager from '@/components/admin/UsuariosManager';
 import GeografiaManager from '@/components/admin/GeografiaManager';
 import RelatoriosManager from '@/components/admin/RelatoriosManager';
+import ErrorBoundary from '@/components/dev/ErrorBoundary'; // <= ENVOLVEREMOS A ABA GEOGRAFIA COM ELE
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -66,11 +67,11 @@ const AdminDashboard = () => {
       
       const totalVotos = votacao?.reduce((sum, v) => sum + (v.votos || 0), 0) || 0;
       
-      setStats([
-        { ...stats[0], value: candidatos?.length?.toString() || '0' },
-        { ...stats[1], value: partidos?.length?.toString() || '0' },
-        { ...stats[2], value: totalVotos > 1000 ? `${(totalVotos/1000).toFixed(1)}K` : totalVotos.toString() },
-        { ...stats[3], value: regionais?.length?.toString() || '0' }
+      setStats((prev) => [
+        { ...prev[0], value: candidatos?.length?.toString() || '0' },
+        { ...prev[1], value: partidos?.length?.toString() || '0' },
+        { ...prev[2], value: totalVotos > 1000 ? `${(totalVotos/1000).toFixed(1)}K` : totalVotos.toString() },
+        { ...prev[3], value: regionais?.length?.toString() || '0' }
       ]);
     } catch (error) {
       console.error('Erro ao buscar estatísticas:', error);
@@ -180,8 +181,11 @@ const AdminDashboard = () => {
             <UsuariosManager />
           </TabsContent>
 
+          {/* ABA GEOGRAFIA ENVOLTA POR ERRORBOUNDARY */}
           <TabsContent value="geografia">
-            <GeografiaManager />
+            <ErrorBoundary>
+              <GeografiaManager />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="relatorios">
