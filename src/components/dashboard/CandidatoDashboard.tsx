@@ -88,7 +88,7 @@ const CandidatoDashboard = () => {
     }, {} as Record<string, number>);
 
     const rankingRegionais = Object.entries(votosPorRegional)
-      .map(([nome, votos]) => ({ nome, votos }))
+      .map(([nome, votos]) => ({ nome, votos: Number(votos) }))
       .sort((a, b) => b.votos - a.votos);
 
     return {
