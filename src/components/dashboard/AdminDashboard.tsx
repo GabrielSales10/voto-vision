@@ -173,7 +173,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="candidatos">
-             <MultiYearCandidateManager />
+            <MultiYearCandidateManager />
           </TabsContent>
 
           <TabsContent value="usuarios">
