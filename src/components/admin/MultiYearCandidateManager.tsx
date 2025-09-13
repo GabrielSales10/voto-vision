@@ -114,7 +114,7 @@ function YearFilesUploader({
                 <Upload className="w-6 h-6 mx-auto text-gray-400 mb-2" />
                 <p className="text-sm">Clique ou arraste o arquivo CSV</p>
                 <p className="text-xs text-gray-500">
-                  Zona, Seção, Seções Agregadas, Votos, Local de Votação, Endereço, Bairro
+                  Zona, Seção, Seções Agregadas, Votos, Local de Votação, Endereço, Bairro, Município/Cidade
                 </p>
               </div>
             )}
@@ -138,7 +138,7 @@ function YearFilesUploader({
                 <Upload className="w-6 h-6 mx-auto text-gray-400 mb-2" />
                 <p className="text-sm">Clique ou arraste o arquivo CSV</p>
                 <p className="text-xs text-gray-500">
-                  Bairro, Votos, % Votos Obtidos
+                  Bairro, Votos, % Votos Obtidos, Município/Cidade
                 </p>
               </div>
             )}
@@ -294,6 +294,18 @@ const MultiYearCandidateManager = () => {
     return data.publicUrl;
   };
 
+  // --------- NOVO: extrai cidade de várias variações de cabeçalho
+  const getCidadeFromRow = (row: any): string => {
+    return (
+      row['Município'] ??
+      row['Municipio'] ??
+      row['Cidade'] ??
+      row['Cidade/Município'] ??
+      row['Cidade/Municipio'] ??
+      ''
+    )?.toString().trim();
+  };
+
   const processCSVFile = async (file: File, type: 'secao' | 'bairro', candidatoId: string, ano: number) => {
     return new Promise((resolve, reject) => {
       Papa.parse(file, {
@@ -305,6 +317,7 @@ const MultiYearCandidateManager = () => {
               const secaoData = (results.data as any[]).map((row: any) => ({
                 candidato_id: candidatoId,
                 ano,
+                cidade: getCidadeFromRow(row),
                 zona: (row.Zona ?? '').toString() || '0',
                 secao: (row['Seção'] ?? row['Secao'] ?? '').toString() || '0',
                 secoes_agregadas: row['Seções Agregadas'] ?? row['Secoes Agregadas'] ?? '',
@@ -319,6 +332,7 @@ const MultiYearCandidateManager = () => {
               const bairroData = (results.data as any[]).map((row: any) => ({
                 candidato_id: candidatoId,
                 ano,
+                cidade: getCidadeFromRow(row),
                 bairro_nome: row.Bairro ?? '',
                 votos: parseInt(row.Votos) || 0,
                 percentual_votos: parseFloat(row['% Votos Obtidos'] ?? row['Percentual Votos'] ?? '0') || 0
@@ -396,7 +410,7 @@ const MultiYearCandidateManager = () => {
             supabase.from('candidate_secoes').delete().eq('candidato_id', candidatoId!).eq('ano', year),
             supabase.from('candidate_bairros').delete().eq('candidato_id', candidatoId!).eq('ano', year)
           ]);
-          // insere novos
+          // insere novos (com cidade)
           await Promise.all([
             processCSVFile(yearData.secaoFile, 'secao', candidatoId!, year),
             processCSVFile(yearData.bairroFile, 'bairro', candidatoId!, year)
