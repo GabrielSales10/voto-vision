@@ -32,7 +32,6 @@ const UsuariosManager = () => {
 
   // Form state
   const [login, setLogin] = useState('');
-  const [email, setEmail] = useState('');
   const [nome, setNome] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('candidato');
@@ -102,7 +101,6 @@ const UsuariosManager = () => {
 
   const resetForm = () => {
     setLogin('');
-    setEmail('');
     setNome('');
     setPassword('');
     setRole('candidato');
@@ -115,7 +113,6 @@ const UsuariosManager = () => {
     if (usuario) {
       setEditingUsuario(usuario);
       setLogin(usuario.login || '');
-      setEmail(usuario.email);
       setNome(usuario.nome);
       setRole(usuario.role);
       setPassword(''); // Não mostrar senha existente
@@ -147,9 +144,10 @@ const UsuariosManager = () => {
           description: "Usuário atualizado com sucesso!",
         });
       } else {
-        // Criar novo usuário
+        // Criar novo usuário - usando login como email para o Supabase
+        const emailForAuth = `${login}@voto-vision.local`;
         const { error } = await supabase.auth.signUp({
-          email,
+          email: emailForAuth,
           password,
           options: {
             data: {
@@ -175,7 +173,7 @@ const UsuariosManager = () => {
               const { data: profile } = await supabase
                 .from('profiles')
                 .select('user_id')
-                .eq('email', email)
+                .eq('login', login)
                 .single();
 
               if (profile) {
@@ -325,22 +323,13 @@ const UsuariosManager = () => {
                     id="login"
                     value={login}
                     onChange={(e) => setLogin(e.target.value)}
-                    placeholder="login_usuario"
+                    placeholder="nome_usuario"
                     disabled={!!editingUsuario}
                     required
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="email@exemplo.com"
-                    disabled={!!editingUsuario}
-                    required
-                  />
+                  <p className="text-xs text-muted-foreground">
+                    Este será usado para fazer login no sistema
+                  </p>
                 </div>
                 {!editingUsuario && (
                   <div className="space-y-2">
@@ -454,7 +443,6 @@ const UsuariosManager = () => {
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>Login</TableHead>
-              <TableHead>Email</TableHead>
               <TableHead>Função</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Data de Criação</TableHead>
@@ -466,7 +454,6 @@ const UsuariosManager = () => {
               <TableRow key={usuario.id}>
                 <TableCell className="font-medium">{usuario.nome}</TableCell>
                 <TableCell>{usuario.login || 'N/A'}</TableCell>
-                <TableCell>{usuario.email}</TableCell>
                 <TableCell>
                   <Badge variant={getRoleColor(usuario.role)} className="flex items-center gap-1 w-fit">
                     {getRoleIcon(usuario.role)}
@@ -507,7 +494,7 @@ const UsuariosManager = () => {
             ))}
             {usuarios.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Nenhum usuário encontrado.
                 </TableCell>
               </TableRow>

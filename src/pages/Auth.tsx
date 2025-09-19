@@ -16,7 +16,7 @@ const Auth = () => {
   const [showPasswordReset, setShowPasswordReset] = useState(false);
 
   // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginUser, setLoginUser] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
   // Password reset state
@@ -30,7 +30,10 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await signIn(loginEmail, loginPassword);
+    
+    // Convert login to email format for Supabase auth
+    const emailFormat = loginUser.includes('@') ? loginUser : `${loginUser}@voto-vision.local`;
+    await signIn(emailFormat, loginPassword);
     setIsLoading(false);
   };
 
@@ -78,8 +81,8 @@ const Auth = () => {
           <div className="w-16 h-16 bg-gradient-primary rounded-lg flex items-center justify-center mx-auto mb-4">
             <BarChart3 className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">ElectoralPro</h1>
-          <p className="text-muted-foreground">Análise Eleitoral Inteligente</p>
+          <h1 className="text-3xl font-bold text-foreground">Voto Vision</h1>
+          <p className="text-muted-foreground">Sistema de Análise Eleitoral</p>
         </div>
 
         <Card className="shadow-elegant">
@@ -129,13 +132,13 @@ const Auth = () => {
             ) : (
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="login">Login</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
+                    id="login"
+                    type="text"
+                    placeholder="nome_usuario"
+                    value={loginUser}
+                    onChange={(e) => setLoginUser(e.target.value)}
                     required
                   />
                 </div>
@@ -169,8 +172,9 @@ const Auth = () => {
                     variant="outline" 
                     className="w-full"
                     onClick={() => setShowPasswordReset(true)}
+                    disabled
                   >
-                    Esqueci minha senha
+                    Esqueci minha senha (Fora do ar)
                   </Button>
                 </div>
               </form>
