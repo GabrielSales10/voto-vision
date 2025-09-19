@@ -182,10 +182,8 @@ const UsuariosManager = () => {
           },
         });
 
+        if (fnErr) throw new Error(fnErr.message || "Falha ao criar usuário.");
 
-        if (fnErr) {
-          throw new Error(fnErr.message || "Falha ao criar usuário.");
-        }
 
 
         toast({ title: "Sucesso", description: "Usuário criado com sucesso!" });
