@@ -148,34 +148,76 @@ const UsuariosManager = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      validateLogin(login);
+  try {
+    validateLogin(login);
 
-      if (!editingUsuario) {
-        // valida dependências por função
-        if (role !== 'presidente' && role !== 'admin' && !selectedCandidateId) {
-          throw new Error('Selecione o candidato para este usuário.');
+    if (!editingUsuario) {
+      // valida dependências por função
+      if (role !== 'presidente' && role !== 'admin' && !selectedCandidateId) {
+        throw new Error('Selecione o candidato para este usuário.');
+      }
+      if (role === 'presidente' && !selectedPartyId) {
+        throw new Error('Selecione o partido para o presidente.');
+      }
+    }
+
+    if (editingUsuario) {
+      // Atualiza apenas dados de profile (login não editável aqui)
+      const { error } = await supabase
+        .from('profiles')
+        .update({ nome, role })
+        .eq('id', editingUsuario.id);
+      if (error) throw error;
+
+      toast({ title: 'Sucesso', description: 'Usuário atualizado com sucesso!' });
+    } else {
+      // Criar novo usuário via Edge Function (admin-create-user)
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // precisa estar logado como admin
+          },
+          body: JSON.stringify({
+            fullName: nome,
+            login,
+            password,
+            role,
+            candidateId:
+              role !== 'presidente' && role !== 'admin' ? selectedCandidateId : null,
+            partyId: role === 'presidente' ? selectedPartyId : null,
+            fakeEmailDomain:
+              (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || 'example.com',
+          }),
         }
-        if (role === 'presidente' && !selectedPartyId) {
-          throw new Error('Selecione o partido para o presidente.');
-        }
+      );
+
+      const json = await resp.json();
+      if (!resp.ok || json?.error) {
+        throw new Error(json?.error || 'Falha ao criar usuário.');
       }
 
-      if (editingUsuario) {
-        // Atualiza apenas dados de profile (login não editável aqui)
-        const { error } = await supabase
-          .from('profiles')
-          .update({ nome, role })
-          .eq('id', editingUsuario.id);
-        if (error) throw error;
+      toast({ title: 'Sucesso', description: 'Usuário criado com sucesso!' });
+    }
 
-        toast({ title: 'Sucesso', description: 'Usuário atualizado com sucesso!' });
-      } else {
-  // Criar novo usuário via Edge Function (admin-create-user)
-  const { data: sessionData } = await supabase.auth.getSession();
-  const token = sessionData.session?.access_token;
+    // fechar modal, limpar e recarregar lista
+    setDialogOpen(false);
+    resetForm();
+    await fetchUsuarios();
+  } catch (error: any) {
+    console.error('Erro ao salvar usuário:', error);
+    const message = error?.message || 'Erro ao salvar usuário.';
+    toast({ title: 'Erro', description: message, variant: 'destructive' });
+  }
+};
+
 
   const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`, {
     method: 'POST',
