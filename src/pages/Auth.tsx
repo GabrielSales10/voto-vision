@@ -32,7 +32,7 @@ const Auth = () => {
     setIsLoading(true);
     
     // Convert login to email format for Supabase auth
-    const emailFormat = loginUser.includes('@') ? loginUser : `${loginUser}@voto-vision.local`;
+    const emailFormat = loginUser.includes('@') ? loginUser : `${loginUser}@voto-vision.app`;
     await signIn(emailFormat, loginPassword);
     setIsLoading(false);
   };

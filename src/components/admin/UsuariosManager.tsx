@@ -145,7 +145,7 @@ const UsuariosManager = () => {
         });
       } else {
         // Criar novo usuário - usando login como email para o Supabase
-        const emailForAuth = `${login}@voto-vision.local`;
+        const emailForAuth = `${login}@voto-vision.app`;
         const { error } = await supabase.auth.signUp({
           email: emailForAuth,
           password,
