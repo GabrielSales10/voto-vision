@@ -160,29 +160,37 @@ const UsuariosManager = () => {
         toast({ title: "Sucesso", description: "Usuário atualizado com sucesso!" });
       } else {
         // Criar novo usuário via Edge Function (admin-create-user)
-        const { data: sessionData, error: sessErr } = await supabase.auth.getSession();
-        if (sessErr) throw sessErr;
+        // Criar novo usuário via Edge Function (admin-create-user)
+const { data: sessionData, error: sessErr } = await supabase.auth.getSession();
+if (sessErr) throw sessErr;
 
-        const token = sessionData?.session?.access_token;
-        if (!token) throw new Error("Sessão inválida. Faça login novamente.");
+const token = sessionData?.session?.access_token;
+if (!token) throw new Error("Sessão inválida. Faça login novamente.");
 
-        const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`;
+const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`;
 
-        const { data: fnData, error: fnErr } = await supabase.functions.invoke("admin-create-user", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: {
-            fullName: nome,
-            login,
-            password,
-            role,
-            candidateId: role !== "presidente" && role !== "admin" ? selectedCandidateId : null,
-            partyId: role === "presidente" ? selectedPartyId : null,
-            fakeEmailDomain: (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || "example.com",
-          },
-        });
+const resp = await fetch(fnUrl, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify({
+    fullName: nome,
+    login,
+    password,
+    role,
+    candidateId: role !== "presidente" && role !== "admin" ? selectedCandidateId : null,
+    partyId: role === "presidente" ? selectedPartyId : null,
+    fakeEmailDomain: (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || "example.com",
+  }),
+});
 
-        if (fnErr) throw new Error(fnErr.message || "Falha ao criar usuário.");
+if (!resp.ok) {
+  const errorText = await resp.text();
+  throw new Error(errorText || "Falha ao criar usuário.");
+}
+
 
 
 
