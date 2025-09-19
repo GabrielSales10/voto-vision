@@ -175,14 +175,15 @@ const UsuariosManager = () => {
       } else {
         // Cria usuário no Auth usando e-mail técnico derivado do login
         const emailForAuth = loginToEmail(login);
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data, error: createError } = await supabase.auth.admin.createUser({
           email: emailForAuth,
           password,
-          options: {
-            data: { login, nome, role },
-          },
+          email_confirm: true, // já marca como confirmado
+          user_metadata: { login, nome, role },
+          app_metadata: { role },
         });
-        if (signUpError) throw signUpError;
+        if (createError) throw createError;
+
 
         // aguarda criação do profile via trigger
         const profile = await waitForProfileByLogin(login);
