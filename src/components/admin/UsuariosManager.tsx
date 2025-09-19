@@ -10,9 +10,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { UserRole } from "@/hooks/useAuth";
@@ -31,7 +44,26 @@ interface Profile {
 
 function validateLogin(login: string) {
   if (!/^[a-z0-9._-]{3,32}$/i.test(login)) {
-    throw new Error("Login deve ter 3–32 caracteres (letras, números, ponto, hífen ou _).");
+    throw new Error(
+      "Login deve ter 3–32 caracteres (letras, números, ponto, hífen ou _)."
+    );
+  }
+}
+
+function pickErrorMessage(err: any): string {
+  // tenta extrair a mensagem mais útil possível
+  if (!err) return "Erro desconhecido.";
+  if (typeof err === "string") return err;
+  if (err.message) return err.message;
+
+  // respostas do invoke às vezes vêm em data.error
+  if (err.error) return err.error;
+  if (err?.context?.error) return err.context.error;
+
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return "Erro inesperado.";
   }
 }
 
@@ -140,7 +172,6 @@ const UsuariosManager = () => {
       validateLogin(login);
 
       if (!editingUsuario) {
-        // valida dependências por função
         if (role !== "presidente" && role !== "admin" && !selectedCandidateId) {
           throw new Error("Selecione o candidato para este usuário.");
         }
@@ -157,13 +188,15 @@ const UsuariosManager = () => {
           .eq("id", editingUsuario.id);
         if (error) throw error;
 
-        toast({ title: "Sucesso", description: "Usuário atualizado com sucesso!" });
+        toast({
+          title: "Sucesso",
+          description: "Usuário atualizado com sucesso!",
+        });
       } else {
         // Criar novo usuário via Edge Function (admin-create-user)
-        // IMPORTANTE: não enviar Authorization manualmente — o supabase.functions.invoke
-        // envia automaticamente o token da sessão atual (quando houver).
         const fakeDomain =
-          (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || "example.com";
+          (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN ||
+          "example.com";
 
         const { data: fnData, error: fnErr } = await supabase.functions.invoke(
           "admin-create-user",
@@ -175,21 +208,37 @@ const UsuariosManager = () => {
               password,
               role,
               candidateId:
-                role !== "presidente" && role !== "admin" ? selectedCandidateId : null,
+                role !== "presidente" && role !== "admin"
+                  ? selectedCandidateId
+                  : null,
               partyId: role === "presidente" ? selectedPartyId : null,
               fakeEmailDomain: fakeDomain,
             },
           }
         );
 
+        // debug opcional
+        console.log("admin-create-user -> data:", fnData, "error:", fnErr);
+
         if (fnErr) {
-          throw new Error(fnErr.message || "Falha ao criar usuário.");
+          // edge falhou (status não-2xx)
+          const detailed =
+            (fnData as any)?.error ||
+            (fnErr as any)?.context?.error ||
+            (fnErr as any)?.message ||
+            JSON.stringify(fnErr);
+          throw new Error(detailed);
         }
 
-        // opcional: usar fnData se necessário
-        console.log("Edge return:", fnData);
+        if ((fnData as any)?.error) {
+          // edge retornou 200 mas com campo error
+          throw new Error((fnData as any).error);
+        }
 
-        toast({ title: "Sucesso", description: "Usuário criado com sucesso!" });
+        toast({
+          title: "Sucesso",
+          description: "Usuário criado com sucesso!",
+        });
       }
 
       // fechar modal, limpar e recarregar lista
@@ -198,7 +247,7 @@ const UsuariosManager = () => {
       await fetchUsuarios();
     } catch (error: any) {
       console.error("Erro ao salvar usuário:", error);
-      const message = error?.message || "Erro ao salvar usuário.";
+      const message = pickErrorMessage(error) || "Erro ao salvar usuário.";
       toast({ title: "Erro", description: message, variant: "destructive" });
     }
   };
@@ -214,7 +263,9 @@ const UsuariosManager = () => {
 
       toast({
         title: "Sucesso",
-        description: `Usuário ${!usuario.ativo ? "ativado" : "desativado"} com sucesso!`,
+        description: `Usuário ${
+          !usuario.ativo ? "ativado" : "desativado"
+        } com sucesso!`,
       });
 
       fetchUsuarios();
@@ -222,7 +273,7 @@ const UsuariosManager = () => {
       console.error("Erro ao alterar status do usuário:", error);
       toast({
         title: "Erro",
-        description: "Erro ao alterar status do usuário.",
+        description: pickErrorMessage(error),
         variant: "destructive",
       });
     }
@@ -286,7 +337,9 @@ const UsuariosManager = () => {
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>{editingUsuario ? "Editar Usuário" : "Novo Usuário"}</DialogTitle>
+                <DialogTitle>
+                  {editingUsuario ? "Editar Usuário" : "Novo Usuário"}
+                </DialogTitle>
               </DialogHeader>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -363,7 +416,10 @@ const UsuariosManager = () => {
                 {role !== "presidente" && role !== "admin" && !editingUsuario && (
                   <div className="space-y-2">
                     <Label htmlFor="candidate">Candidato</Label>
-                    <Select value={selectedCandidateId} onValueChange={setSelectedCandidateId}>
+                    <Select
+                      value={selectedCandidateId}
+                      onValueChange={setSelectedCandidateId}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o candidato" />
                       </SelectTrigger>
@@ -372,7 +428,9 @@ const UsuariosManager = () => {
                           <SelectItem key={candidato.id} value={candidato.id}>
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{candidato.nome}</span>
-                              {candidato.numero && <Badge variant="outline">{candidato.numero}</Badge>}
+                              {candidato.numero && (
+                                <Badge variant="outline">{candidato.numero}</Badge>
+                              )}
                             </div>
                           </SelectItem>
                         ))}
@@ -403,10 +461,16 @@ const UsuariosManager = () => {
                 )}
 
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setDialogOpen(false)}
+                  >
                     Cancelar
                   </Button>
-                  <Button type="submit">{editingUsuario ? "Atualizar" : "Criar"}</Button>
+                  <Button type="submit">
+                    {editingUsuario ? "Atualizar" : "Criar"}
+                  </Button>
                 </div>
               </form>
             </DialogContent>
@@ -432,7 +496,10 @@ const UsuariosManager = () => {
                 <TableCell className="font-medium">{usuario.nome}</TableCell>
                 <TableCell>{usuario.login || "N/A"}</TableCell>
                 <TableCell>
-                  <Badge variant={getRoleColor(usuario.role) as any} className="flex items-center gap-1 w-fit">
+                  <Badge
+                    variant={getRoleColor(usuario.role) as any}
+                    className="flex items-center gap-1 w-fit"
+                  >
                     {getRoleIcon(usuario.role)}
                     {getRoleLabel(usuario.role)}
                   </Badge>
@@ -442,10 +509,16 @@ const UsuariosManager = () => {
                     {usuario.ativo ? "Ativo" : "Inativo"}
                   </Badge>
                 </TableCell>
-                <TableCell>{new Date(usuario.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                <TableCell>
+                  {new Date(usuario.created_at).toLocaleDateString("pt-BR")}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => openDialog(usuario)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openDialog(usuario)}
+                    >
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button
