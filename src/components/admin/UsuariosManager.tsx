@@ -15,12 +15,40 @@ import { User, Plus, Edit, Trash2, Shield, Crown, Users } from 'lucide-react';
 interface Profile {
   id: string;
   user_id: string;
-  email: string;
+  email: string | null;
   nome: string;
   role: UserRole;
   ativo: boolean;
   created_at: string;
   login?: string;
+}
+
+const FAKE_EMAIL_DOMAIN =
+  (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || 'voto-vision.app'; // TLD real
+
+function loginToEmail(login: string) {
+  const normalized = String(login || '').trim().toLowerCase().replace(/\s+/g, '');
+  return `${normalized}@${FAKE_EMAIL_DOMAIN}`;
+}
+
+function validateLogin(login: string) {
+  if (!/^[a-z0-9._-]{3,32}$/i.test(login)) {
+    throw new Error('Login deve ter 3–32 caracteres (letras, números, ponto, hífen ou _).');
+  }
+}
+
+async function waitForProfileByLogin(login: string, tries = 10, delayMs = 500) {
+  // aguarda o trigger de criação do profile
+  for (let i = 0; i < tries; i++) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, user_id, login')
+      .eq('login', login)
+      .maybeSingle();
+    if (!error && data) return data;
+    await new Promise((r) => setTimeout(r, delayMs));
+  }
+  return null;
 }
 
 const UsuariosManager = () => {
@@ -55,7 +83,6 @@ const UsuariosManager = () => {
         .select('id, nome, numero, partidos(nome)')
         .eq('ativo', true)
         .order('nome');
-      
       if (error) throw error;
       setCandidatos(data || []);
     } catch (error) {
@@ -70,7 +97,6 @@ const UsuariosManager = () => {
         .select('id, nome, sigla')
         .eq('ativo', true)
         .order('nome');
-      
       if (error) throw error;
       setPartidos(data || []);
     } catch (error) {
@@ -84,15 +110,14 @@ const UsuariosManager = () => {
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       setUsuarios(data || []);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar os usuários.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Não foi possível carregar os usuários.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -115,7 +140,7 @@ const UsuariosManager = () => {
       setLogin(usuario.login || '');
       setNome(usuario.nome);
       setRole(usuario.role);
-      setPassword(''); // Não mostrar senha existente
+      setPassword('');
     } else {
       resetForm();
     }
@@ -124,98 +149,82 @@ const UsuariosManager = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
+      validateLogin(login);
+
+      if (!editingUsuario) {
+        // valida dependências por função
+        if (role !== 'presidente' && role !== 'admin' && !selectedCandidateId) {
+          throw new Error('Selecione o candidato para este usuário.');
+        }
+        if (role === 'presidente' && !selectedPartyId) {
+          throw new Error('Selecione o partido para o presidente.');
+        }
+      }
+
       if (editingUsuario) {
-        // Atualizar perfil existente
+        // Atualiza apenas dados de profile (login não editável aqui)
         const { error } = await supabase
           .from('profiles')
-          .update({
-            login,
-            nome,
-            role,
-          })
+          .update({ nome, role })
           .eq('id', editingUsuario.id);
-
         if (error) throw error;
-        
-        toast({
-          title: "Sucesso",
-          description: "Usuário atualizado com sucesso!",
-        });
+
+        toast({ title: 'Sucesso', description: 'Usuário atualizado com sucesso!' });
       } else {
-        // Criar novo usuário - usando login como email para o Supabase
-        const emailForAuth = `${login}@voto-vision.app`;
-        const { error } = await supabase.auth.signUp({
+        // Cria usuário no Auth usando e-mail técnico derivado do login
+        const emailForAuth = loginToEmail(login);
+        const { error: signUpError } = await supabase.auth.signUp({
           email: emailForAuth,
           password,
           options: {
-            data: {
-              login,
-              nome,
-              role,
-            }
-          }
+            data: { login, nome, role },
+          },
         });
+        if (signUpError) throw signUpError;
 
-        if (error) throw error;
-        
-        toast({
-          title: "Sucesso",
-          description: "Usuário criado com sucesso! Ele receberá um email de confirmação.",
-        });
-
-        // Create access records after user creation
-        if (!editingUsuario) {
-          setTimeout(async () => {
-            try {
-              // Get the created user profile
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('user_id')
-                .eq('login', login)
-                .single();
-
-              if (profile) {
-                // Create candidate access if role requires it
-                if (role !== 'presidente' && selectedCandidateId) {
-                  await supabase
-                    .from('user_candidate_access')
-                    .insert({
-                      user_id: profile.user_id,
-                      candidate_id: selectedCandidateId
-                    });
-                }
-
-                // Create party access if role is presidente
-                if (role === 'presidente' && selectedPartyId) {
-                  await supabase
-                    .from('user_party_access')
-                    .insert({
-                      user_id: profile.user_id,
-                      party_id: selectedPartyId
-                    });
-                }
-              }
-            } catch (error) {
-              console.error('Erro ao criar acesso:', error);
-            }
-          }, 2000); // Wait longer for profile creation
+        // aguarda criação do profile via trigger
+        const profile = await waitForProfileByLogin(login);
+        if (!profile?.user_id) {
+          throw new Error('Não foi possível criar o perfil do usuário. Tente novamente.');
         }
+
+        // cria acessos conforme a função
+        if (role !== 'presidente' && role !== 'admin' && selectedCandidateId) {
+          const { error } = await supabase
+            .from('user_candidate_access')
+            .insert({ user_id: profile.user_id, candidate_id: selectedCandidateId });
+          if (error) throw error;
+        }
+
+        if (role === 'presidente' && selectedPartyId) {
+          const { error } = await supabase
+            .from('user_party_access')
+            .insert({ user_id: profile.user_id, party_id: selectedPartyId });
+          if (error) throw error;
+        }
+
+        toast({
+          title: 'Sucesso',
+          description: 'Usuário criado com sucesso!',
+        });
       }
 
       setDialogOpen(false);
       resetForm();
-      
-      // Aguardar um pouco antes de recarregar para o trigger processar
-      setTimeout(fetchUsuarios, 1000);
+      await fetchUsuarios();
     } catch (error: any) {
       console.error('Erro ao salvar usuário:', error);
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao salvar usuário.",
-        variant: "destructive",
-      });
+      let message = error?.message || 'Erro ao salvar usuário.';
+      // mensagens mais amigáveis para casos comuns
+      if (String(message).includes('invalid email')) {
+        message = 'Domínio técnico do login inválido. Ajuste VITE_AUTH_FAKE_EMAIL_DOMAIN para um domínio real.';
+      }
+      if (String(message).includes('User already registered')) {
+        message = 'Login já cadastrado.';
+      }
+      toast({ title: 'Erro', description: message, variant: 'destructive' });
     }
   };
 
@@ -225,11 +234,10 @@ const UsuariosManager = () => {
         .from('profiles')
         .update({ ativo: !usuario.ativo })
         .eq('id', usuario.id);
-
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
+        title: 'Sucesso',
         description: `Usuário ${!usuario.ativo ? 'ativado' : 'desativado'} com sucesso!`,
       });
 
@@ -237,9 +245,9 @@ const UsuariosManager = () => {
     } catch (error: any) {
       console.error('Erro ao alterar status do usuário:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao alterar status do usuário.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Erro ao alterar status do usuário.',
+        variant: 'destructive',
       });
     }
   };
@@ -317,6 +325,7 @@ const UsuariosManager = () => {
                     required
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="login">Login</Label>
                   <Input
@@ -328,9 +337,10 @@ const UsuariosManager = () => {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Este será usado para fazer login no sistema
+                    Apenas login e senha. (Nenhum e-mail será usado.)
                   </p>
                 </div>
+
                 {!editingUsuario && (
                   <div className="space-y-2">
                     <Label htmlFor="password">Senha</Label>
@@ -345,6 +355,7 @@ const UsuariosManager = () => {
                     />
                   </div>
                 )}
+
                 <div className="space-y-2">
                   <Label htmlFor="role">Função</Label>
                   <Select value={role} onValueChange={(value: UserRole) => setRole(value)}>
@@ -373,8 +384,7 @@ const UsuariosManager = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
-                {/* Candidate Selection - Show for non-president roles */}
+
                 {role !== 'presidente' && role !== 'admin' && !editingUsuario && (
                   <div className="space-y-2">
                     <Label htmlFor="candidate">Candidato</Label>
@@ -398,7 +408,6 @@ const UsuariosManager = () => {
                   </div>
                 )}
 
-                {/* Party Selection - Show for president role */}
                 {role === 'presidente' && !editingUsuario && (
                   <div className="space-y-2">
                     <Label htmlFor="party">Partido</Label>
@@ -419,13 +428,9 @@ const UsuariosManager = () => {
                     </Select>
                   </div>
                 )}
-                
+
                 <div className="flex justify-end gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setDialogOpen(false)}
-                  >
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                     Cancelar
                   </Button>
                   <Button type="submit">
@@ -437,6 +442,7 @@ const UsuariosManager = () => {
           </Dialog>
         </div>
       </CardHeader>
+
       <CardContent>
         <Table>
           <TableHeader>
@@ -461,7 +467,7 @@ const UsuariosManager = () => {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={usuario.ativo ? "default" : "secondary"}>
+                  <Badge variant={usuario.ativo ? 'default' : 'secondary'}>
                     {usuario.ativo ? 'Ativo' : 'Inativo'}
                   </Badge>
                 </TableCell>
@@ -470,23 +476,15 @@ const UsuariosManager = () => {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openDialog(usuario)}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => openDialog(usuario)}>
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button
-                      variant={usuario.ativo ? "destructive" : "default"}
+                      variant={usuario.ativo ? 'destructive' : 'default'}
                       size="sm"
                       onClick={() => toggleUsuarioStatus(usuario)}
                     >
-                      {usuario.ativo ? (
-                        <Trash2 className="w-4 h-4" />
-                      ) : (
-                        'Ativar'
-                      )}
+                      {usuario.ativo ? <Trash2 className="w-4 h-4" /> : 'Ativar'}
                     </Button>
                   </div>
                 </TableCell>
