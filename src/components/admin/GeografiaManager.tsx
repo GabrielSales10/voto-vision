@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Plus, Save } from "lucide-react";
 
-type Regional = { id: string; nome: string; cidade: string | null };
+type Regional = { id: string; nome: string; sigla: string | null; ativo: boolean; created_at: string };
+type RegionaisBairros = { id: string; regional_id: string; cidade: string; bairro_nome: string; created_at: string };
 
 const NO_REGIONAL_SENTINEL = "none";
 
@@ -93,7 +94,7 @@ export default function GeografiaManager() {
           await Promise.all([
             supabase.from("regionais").select("*").eq("cidade", activeCity),
             supabase.from("candidate_bairros").select("bairro_nome").eq("cidade", activeCity),
-            supabase.from("regionais_bairros").select("*").eq("cidade", activeCity),
+            (supabase as any).from("regionais_bairros").select("*").eq("cidade", activeCity),
           ]);
 
         if (regsErr) throw regsErr;
@@ -115,7 +116,7 @@ export default function GeografiaManager() {
           setBairros(bairrosList);
 
           const m: Record<string, string | null> = {};
-          (map || []).forEach((row: any) => {
+          (map || []).forEach((row: RegionaisBairros) => {
             m[row.bairro_nome] = row.regional_id;
           });
           setMapping(m);
@@ -156,7 +157,7 @@ export default function GeografiaManager() {
     if (!activeCity) return;
     try {
       if (regionalId) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("regionais_bairros")
           .upsert({
             cidade: activeCity,
@@ -165,7 +166,7 @@ export default function GeografiaManager() {
           });
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("regionais_bairros")
           .delete()
           .eq("cidade", activeCity)

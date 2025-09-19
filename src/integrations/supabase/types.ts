@@ -96,6 +96,7 @@ export type Database = {
           ano: number | null
           bairro_nome: string
           candidato_id: string | null
+          cidade: string | null
           created_at: string | null
           id: string
           percentual_votos: number | null
@@ -106,6 +107,7 @@ export type Database = {
           ano?: number | null
           bairro_nome: string
           candidato_id?: string | null
+          cidade?: string | null
           created_at?: string | null
           id?: string
           percentual_votos?: number | null
@@ -116,6 +118,7 @@ export type Database = {
           ano?: number | null
           bairro_nome?: string
           candidato_id?: string | null
+          cidade?: string | null
           created_at?: string | null
           id?: string
           percentual_votos?: number | null
@@ -144,6 +147,7 @@ export type Database = {
           ano: number | null
           bairro: string | null
           candidato_id: string | null
+          cidade: string | null
           created_at: string | null
           endereco_local: string | null
           id: string
@@ -157,6 +161,7 @@ export type Database = {
           ano?: number | null
           bairro?: string | null
           candidato_id?: string | null
+          cidade?: string | null
           created_at?: string | null
           endereco_local?: string | null
           id?: string
@@ -170,6 +175,7 @@ export type Database = {
           ano?: number | null
           bairro?: string | null
           candidato_id?: string | null
+          cidade?: string | null
           created_at?: string | null
           endereco_local?: string | null
           id?: string
@@ -329,6 +335,7 @@ export type Database = {
       regionais: {
         Row: {
           ativo: boolean
+          cidade: string | null
           created_at: string
           id: string
           nome: string
@@ -336,6 +343,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          cidade?: string | null
           created_at?: string
           id?: string
           nome: string
@@ -343,12 +351,45 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          cidade?: string | null
           created_at?: string
           id?: string
           nome?: string
           sigla?: string | null
         }
         Relationships: []
+      }
+      regionais_bairros: {
+        Row: {
+          bairro_nome: string
+          cidade: string
+          created_at: string
+          id: string
+          regional_id: string
+        }
+        Insert: {
+          bairro_nome: string
+          cidade: string
+          created_at?: string
+          id?: string
+          regional_id: string
+        }
+        Update: {
+          bairro_nome?: string
+          cidade?: string
+          created_at?: string
+          id?: string
+          regional_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regionais_bairros_regional_id_fkey"
+            columns: ["regional_id"]
+            isOneToOne: false
+            referencedRelation: "regionais"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       secoes: {
         Row: {
@@ -505,6 +546,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       is_admin: {
         Args: { uid: string }
         Returns: boolean

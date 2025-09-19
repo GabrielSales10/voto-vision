@@ -121,7 +121,7 @@ export default function CandidateAnalyticsPage() {
       try {
         const [regs, maps] = await Promise.all([
           supabase.from("regionais").select("id,nome").eq("cidade", city),
-          supabase.from("regionais_bairros").select("*").eq("cidade", city),
+          (supabase as any).from("regionais_bairros").select("*").eq("cidade", city),
         ]);
         if (regs.error) throw regs.error;
         if (maps.error) throw maps.error;
