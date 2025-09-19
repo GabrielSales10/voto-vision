@@ -1,16 +1,22 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { UserRole } from '@/hooks/useAuth';
-import { User, Plus, Edit, Trash2, Shield, Crown, Users } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { UserRole } from "@/hooks/useAuth";
+import { User, Plus, Edit, Trash2, Shield, Crown, Users } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -23,32 +29,10 @@ interface Profile {
   login?: string;
 }
 
-const FAKE_EMAIL_DOMAIN =
-  (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || 'example.com';
-
-function loginToEmail(login: string) {
-  const normalized = String(login || '').trim().toLowerCase().replace(/\s+/g, '');
-  return `${normalized}@${FAKE_EMAIL_DOMAIN}`;
-}
-
 function validateLogin(login: string) {
   if (!/^[a-z0-9._-]{3,32}$/i.test(login)) {
-    throw new Error('Login deve ter 3–32 caracteres (letras, números, ponto, hífen ou _).');
+    throw new Error("Login deve ter 3–32 caracteres (letras, números, ponto, hífen ou _).");
   }
-}
-
-async function waitForProfileByLogin(login: string, tries = 10, delayMs = 500) {
-  // aguarda o trigger de criação do profile
-  for (let i = 0; i < tries; i++) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, user_id, login')
-      .eq('login', login)
-      .maybeSingle();
-    if (!error && data) return data;
-    await new Promise((r) => setTimeout(r, delayMs));
-  }
-  return null;
 }
 
 const UsuariosManager = () => {
@@ -59,13 +43,13 @@ const UsuariosManager = () => {
   const { toast } = useToast();
 
   // Form state
-  const [login, setLogin] = useState('');
-  const [nome, setNome] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('candidato');
-  const [selectedCandidateId, setSelectedCandidateId] = useState('');
-  const [selectedPartyId, setSelectedPartyId] = useState('');
-  
+  const [login, setLogin] = useState("");
+  const [nome, setNome] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<UserRole>("candidato");
+  const [selectedCandidateId, setSelectedCandidateId] = useState("");
+  const [selectedPartyId, setSelectedPartyId] = useState("");
+
   // Lists for selection
   const [candidatos, setCandidatos] = useState<any[]>([]);
   const [partidos, setPartidos] = useState<any[]>([]);
@@ -74,50 +58,52 @@ const UsuariosManager = () => {
     fetchUsuarios();
     fetchCandidatos();
     fetchPartidos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchCandidatos = async () => {
     try {
       const { data, error } = await supabase
-        .from('candidatos')
-        .select('id, nome, numero, partidos(nome)')
-        .eq('ativo', true)
-        .order('nome');
+        .from("candidatos")
+        .select("id, nome, numero, partidos(nome)")
+        .eq("ativo", true)
+        .order("nome");
       if (error) throw error;
       setCandidatos(data || []);
     } catch (error) {
-      console.error('Erro ao carregar candidatos:', error);
+      console.error("Erro ao carregar candidatos:", error);
     }
   };
 
   const fetchPartidos = async () => {
     try {
       const { data, error } = await supabase
-        .from('partidos')
-        .select('id, nome, sigla')
-        .eq('ativo', true)
-        .order('nome');
+        .from("partidos")
+        .select("id, nome, sigla")
+        .eq("ativo", true)
+        .order("nome");
       if (error) throw error;
       setPartidos(data || []);
     } catch (error) {
-      console.error('Erro ao carregar partidos:', error);
+      console.error("Erro ao carregar partidos:", error);
     }
   };
 
   const fetchUsuarios = async () => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
       if (error) throw error;
       setUsuarios(data || []);
     } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
+      console.error("Erro ao carregar usuários:", error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar os usuários.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Não foi possível carregar os usuários.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -125,22 +111,22 @@ const UsuariosManager = () => {
   };
 
   const resetForm = () => {
-    setLogin('');
-    setNome('');
-    setPassword('');
-    setRole('candidato');
-    setSelectedCandidateId('');
-    setSelectedPartyId('');
+    setLogin("");
+    setNome("");
+    setPassword("");
+    setRole("candidato");
+    setSelectedCandidateId("");
+    setSelectedPartyId("");
     setEditingUsuario(null);
   };
 
   const openDialog = (usuario?: Profile) => {
     if (usuario) {
       setEditingUsuario(usuario);
-      setLogin(usuario.login || '');
+      setLogin(usuario.login || "");
       setNome(usuario.nome);
       setRole(usuario.role);
-      setPassword('');
+      setPassword("");
     } else {
       resetForm();
     }
@@ -148,205 +134,132 @@ const UsuariosManager = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    validateLogin(login);
+    try {
+      validateLogin(login);
 
-    if (!editingUsuario) {
-      // valida dependências por função
-      if (role !== 'presidente' && role !== 'admin' && !selectedCandidateId) {
-        throw new Error('Selecione o candidato para este usuário.');
+      if (!editingUsuario) {
+        // valida dependências por função
+        if (role !== "presidente" && role !== "admin" && !selectedCandidateId) {
+          throw new Error("Selecione o candidato para este usuário.");
+        }
+        if (role === "presidente" && !selectedPartyId) {
+          throw new Error("Selecione o partido para o presidente.");
+        }
       }
-      if (role === 'presidente' && !selectedPartyId) {
-        throw new Error('Selecione o partido para o presidente.');
-      }
-    }
 
-    if (editingUsuario) {
-      // Atualiza apenas dados de profile (login não editável aqui)
-      const { error } = await supabase
-        .from('profiles')
-        .update({ nome, role })
-        .eq('id', editingUsuario.id);
-      if (error) throw error;
+      if (editingUsuario) {
+        // Atualiza apenas dados de profile (login não editável aqui)
+        const { error } = await supabase
+          .from("profiles")
+          .update({ nome, role })
+          .eq("id", editingUsuario.id);
+        if (error) throw error;
 
-      toast({ title: 'Sucesso', description: 'Usuário atualizado com sucesso!' });
-    } else {
-      // Criar novo usuário via Edge Function (admin-create-user)
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
+        toast({ title: "Sucesso", description: "Usuário atualizado com sucesso!" });
+      } else {
+        // Criar novo usuário via Edge Function (admin-create-user)
+        const { data: sessionData, error: sessErr } = await supabase.auth.getSession();
+        if (sessErr) throw sessErr;
 
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`,
-        {
-          method: 'POST',
+        const token = sessionData?.session?.access_token;
+        if (!token) throw new Error("Sessão inválida. Faça login novamente.");
+
+        const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`;
+
+        const resp = await fetch(fnUrl, {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`, // precisa estar logado como admin
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // precisa estar logado como admin
           },
           body: JSON.stringify({
             fullName: nome,
             login,
             password,
             role,
-            candidateId:
-              role !== 'presidente' && role !== 'admin' ? selectedCandidateId : null,
-            partyId: role === 'presidente' ? selectedPartyId : null,
+            candidateId: role !== "presidente" && role !== "admin" ? selectedCandidateId : null,
+            partyId: role === "presidente" ? selectedPartyId : null,
             fakeEmailDomain:
-              (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || 'example.com',
+              (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || "example.com",
           }),
-        }
-      );
-
-      const json = await resp.json();
-      if (!resp.ok || json?.error) {
-        throw new Error(json?.error || 'Falha ao criar usuário.');
-      }
-
-      toast({ title: 'Sucesso', description: 'Usuário criado com sucesso!' });
-    }
-
-    // fechar modal, limpar e recarregar lista
-    setDialogOpen(false);
-    resetForm();
-    await fetchUsuarios();
-  } catch (error: any) {
-    console.error('Erro ao salvar usuário:', error);
-    const message = error?.message || 'Erro ao salvar usuário.';
-    toast({ title: 'Erro', description: message, variant: 'destructive' });
-  }
-};
-
-
-  const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`, // JWT do usuário logado (precisa ser admin)
-    },
-    body: JSON.stringify({
-      fullName: nome,
-      login,
-      password,
-      role,
-      candidateId: role !== 'presidente' && role !== 'admin' ? selectedCandidateId : null,
-      partyId: role === 'presidente' ? selectedPartyId : null,
-      fakeEmailDomain: (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || 'example.com',
-    }),
-  });
-
-  const json = await resp.json();
-  if (!resp.ok || json?.error) {
-    throw new Error(json?.error || 'Falha ao criar usuário.');
-  }
-
-  toast({
-    title: "Sucesso",
-    description: "Usuário criado com sucesso!",
-  });
-}
-
-
-
-        // aguarda criação do profile via trigger
-        const profile = await waitForProfileByLogin(login);
-        if (!profile?.user_id) {
-          throw new Error('Não foi possível criar o perfil do usuário. Tente novamente.');
-        }
-
-        // cria acessos conforme a função
-        if (role !== 'presidente' && role !== 'admin' && selectedCandidateId) {
-          const { error } = await supabase
-            .from('user_candidate_access')
-            .insert({ user_id: profile.user_id, candidate_id: selectedCandidateId });
-          if (error) throw error;
-        }
-
-        if (role === 'presidente' && selectedPartyId) {
-          const { error } = await supabase
-            .from('user_party_access')
-            .insert({ user_id: profile.user_id, party_id: selectedPartyId });
-          if (error) throw error;
-        }
-
-        toast({
-          title: 'Sucesso',
-          description: 'Usuário criado com sucesso!',
         });
+
+        const json = (await resp.json().catch(() => ({}))) as any;
+        if (!resp.ok || json?.error) {
+          throw new Error(json?.error || "Falha ao criar usuário.");
+        }
+
+        toast({ title: "Sucesso", description: "Usuário criado com sucesso!" });
       }
 
+      // fechar modal, limpar e recarregar lista
       setDialogOpen(false);
       resetForm();
       await fetchUsuarios();
     } catch (error: any) {
-      console.error('Erro ao salvar usuário:', error);
-      let message = error?.message || 'Erro ao salvar usuário.';
-      // mensagens mais amigáveis para casos comuns
-      if (String(message).includes('invalid email')) {
-        message = 'Domínio técnico do login inválido. Ajuste VITE_AUTH_FAKE_EMAIL_DOMAIN para um domínio real.';
-      }
-      if (String(message).includes('User already registered')) {
-        message = 'Login já cadastrado.';
-      }
-      toast({ title: 'Erro', description: message, variant: 'destructive' });
+      console.error("Erro ao salvar usuário:", error);
+      const message = error?.message || "Erro ao salvar usuário.";
+      toast({ title: "Erro", description: message, variant: "destructive" });
     }
   };
 
   const toggleUsuarioStatus = async (usuario: Profile) => {
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ ativo: !usuario.ativo })
-        .eq('id', usuario.id);
+        .eq("id", usuario.id);
+
       if (error) throw error;
 
       toast({
-        title: 'Sucesso',
-        description: `Usuário ${!usuario.ativo ? 'ativado' : 'desativado'} com sucesso!`,
+        title: "Sucesso",
+        description: `Usuário ${!usuario.ativo ? "ativado" : "desativado"} com sucesso!`,
       });
 
       fetchUsuarios();
     } catch (error: any) {
-      console.error('Erro ao alterar status do usuário:', error);
+      console.error("Erro ao alterar status do usuário:", error);
       toast({
-        title: 'Erro',
-        description: 'Erro ao alterar status do usuário.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Erro ao alterar status do usuário.",
+        variant: "destructive",
       });
     }
   };
 
-  const getRoleIcon = (role: UserRole) => {
-    switch (role) {
-      case 'admin':
+  const getRoleIcon = (r: UserRole) => {
+    switch (r) {
+      case "admin":
         return <Shield className="w-4 h-4" />;
-      case 'presidente':
+      case "presidente":
         return <Crown className="w-4 h-4" />;
-      case 'candidato':
+      case "candidato":
         return <User className="w-4 h-4" />;
     }
   };
 
-  const getRoleLabel = (role: UserRole) => {
-    switch (role) {
-      case 'admin':
-        return 'Administrador';
-      case 'presidente':
-        return 'Presidente';
-      case 'candidato':
-        return 'Candidato';
+  const getRoleLabel = (r: UserRole) => {
+    switch (r) {
+      case "admin":
+        return "Administrador";
+      case "presidente":
+        return "Presidente";
+      case "candidato":
+        return "Candidato";
     }
   };
 
-  const getRoleColor = (role: UserRole) => {
-    switch (role) {
-      case 'admin':
-        return 'destructive';
-      case 'presidente':
-        return 'default';
-      case 'candidato':
-        return 'secondary';
+  const getRoleColor = (r: UserRole) => {
+    switch (r) {
+      case "admin":
+        return "destructive";
+      case "presidente":
+        return "default";
+      case "candidato":
+        return "secondary";
     }
   };
 
@@ -375,10 +288,9 @@ const UsuariosManager = () => {
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>
-                  {editingUsuario ? 'Editar Usuário' : 'Novo Usuário'}
-                </DialogTitle>
+                <DialogTitle>{editingUsuario ? "Editar Usuário" : "Novo Usuário"}</DialogTitle>
               </DialogHeader>
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome Completo</Label>
@@ -450,7 +362,7 @@ const UsuariosManager = () => {
                   </Select>
                 </div>
 
-                {role !== 'presidente' && role !== 'admin' && !editingUsuario && (
+                {role !== "presidente" && role !== "admin" && !editingUsuario && (
                   <div className="space-y-2">
                     <Label htmlFor="candidate">Candidato</Label>
                     <Select value={selectedCandidateId} onValueChange={setSelectedCandidateId}>
@@ -462,9 +374,7 @@ const UsuariosManager = () => {
                           <SelectItem key={candidato.id} value={candidato.id}>
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{candidato.nome}</span>
-                              {candidato.numero && (
-                                <Badge variant="outline">{candidato.numero}</Badge>
-                              )}
+                              {candidato.numero && <Badge variant="outline">{candidato.numero}</Badge>}
                             </div>
                           </SelectItem>
                         ))}
@@ -473,7 +383,7 @@ const UsuariosManager = () => {
                   </div>
                 )}
 
-                {role === 'presidente' && !editingUsuario && (
+                {role === "presidente" && !editingUsuario && (
                   <div className="space-y-2">
                     <Label htmlFor="party">Partido</Label>
                     <Select value={selectedPartyId} onValueChange={setSelectedPartyId}>
@@ -498,9 +408,7 @@ const UsuariosManager = () => {
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit">
-                    {editingUsuario ? 'Atualizar' : 'Criar'}
-                  </Button>
+                  <Button type="submit">{editingUsuario ? "Atualizar" : "Criar"}</Button>
                 </div>
               </form>
             </DialogContent>
@@ -524,32 +432,30 @@ const UsuariosManager = () => {
             {usuarios.map((usuario) => (
               <TableRow key={usuario.id}>
                 <TableCell className="font-medium">{usuario.nome}</TableCell>
-                <TableCell>{usuario.login || 'N/A'}</TableCell>
+                <TableCell>{usuario.login || "N/A"}</TableCell>
                 <TableCell>
-                  <Badge variant={getRoleColor(usuario.role)} className="flex items-center gap-1 w-fit">
+                  <Badge variant={getRoleColor(usuario.role) as any} className="flex items-center gap-1 w-fit">
                     {getRoleIcon(usuario.role)}
                     {getRoleLabel(usuario.role)}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={usuario.ativo ? 'default' : 'secondary'}>
-                    {usuario.ativo ? 'Ativo' : 'Inativo'}
+                  <Badge variant={usuario.ativo ? "default" : "secondary"}>
+                    {usuario.ativo ? "Ativo" : "Inativo"}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  {new Date(usuario.created_at).toLocaleDateString('pt-BR')}
-                </TableCell>
+                <TableCell>{new Date(usuario.created_at).toLocaleDateString("pt-BR")}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" size="sm" onClick={() => openDialog(usuario)}>
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button
-                      variant={usuario.ativo ? 'destructive' : 'default'}
+                      variant={usuario.ativo ? "destructive" : "default"}
                       size="sm"
                       onClick={() => toggleUsuarioStatus(usuario)}
                     >
-                      {usuario.ativo ? <Trash2 className="w-4 h-4" /> : 'Ativar'}
+                      {usuario.ativo ? <Trash2 className="w-4 h-4" /> : "Ativar"}
                     </Button>
                   </div>
                 </TableCell>
