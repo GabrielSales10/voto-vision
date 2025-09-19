@@ -173,16 +173,38 @@ const UsuariosManager = () => {
 
         toast({ title: 'Sucesso', description: 'Usuário atualizado com sucesso!' });
       } else {
-        // Cria usuário no Auth usando e-mail técnico derivado do login
-        const emailForAuth = loginToEmail(login);
-        const { data, error: createError } = await supabase.auth.admin.createUser({
-          email: emailForAuth,
-          password,
-          email_confirm: true, // já marca como confirmado
-          user_metadata: { login, nome, role },
-          app_metadata: { role },
-        });
-        if (createError) throw createError;
+  // Criar novo usuário via Edge Function (admin-create-user)
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+
+  const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`, // JWT do usuário logado (precisa ser admin)
+    },
+    body: JSON.stringify({
+      fullName: nome,
+      login,
+      password,
+      role,
+      candidateId: role !== 'presidente' && role !== 'admin' ? selectedCandidateId : null,
+      partyId: role === 'presidente' ? selectedPartyId : null,
+      fakeEmailDomain: (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || 'example.com',
+    }),
+  });
+
+  const json = await resp.json();
+  if (!resp.ok || json?.error) {
+    throw new Error(json?.error || 'Falha ao criar usuário.');
+  }
+
+  toast({
+    title: "Sucesso",
+    description: "Usuário criado com sucesso!",
+  });
+}
+
 
 
         // aguarda criação do profile via trigger
