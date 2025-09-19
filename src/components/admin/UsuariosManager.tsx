@@ -24,7 +24,7 @@ interface Profile {
 }
 
 const FAKE_EMAIL_DOMAIN =
-  (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || 'example.com';
+  (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || 'gabrielsales390@gmail.com';
 
 function loginToEmail(login: string) {
   const normalized = String(login || '').trim().toLowerCase().replace(/\s+/g, '');
