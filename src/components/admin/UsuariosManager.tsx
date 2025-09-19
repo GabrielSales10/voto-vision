@@ -168,11 +168,9 @@ const UsuariosManager = () => {
 
         const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`;
 
-        const { data: fnData, error: fnErr } = await supabase.functions.invoke("admin-create-user", {
+        const { data: fnData, error: fnErr } = await supabase.functions.invoke("quick-responder", {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
           body: {
             fullName: nome,
             login,
@@ -183,6 +181,7 @@ const UsuariosManager = () => {
             fakeEmailDomain: (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || "example.com",
           },
         });
+
 
         if (fnErr) {
           throw new Error(fnErr.message || "Falha ao criar usuário.");
