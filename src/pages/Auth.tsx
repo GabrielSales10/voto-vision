@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { BarChart3, LogIn, Mail } from 'lucide-react';
+import { loginToEmail } from '@/lib/authLogin';
 
 const Auth = () => {
   const { user, signIn, loading } = useAuth();
@@ -22,45 +23,33 @@ const Auth = () => {
   // Password reset state
   const [resetEmail, setResetEmail] = useState('');
 
-  // Redirect if already authenticated
-  if (user && !loading) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  if (user && !loading) return <Navigate to="/dashboard" replace />;
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Convert login to email format for Supabase auth
-    const emailFormat = loginUser.includes('@') ? loginUser : `${loginUser}@voto-vision.app`;
-    await signIn(emailFormat, loginPassword);
-    setIsLoading(false);
+    try {
+      // Sempre aceita só "login"; se o usuário digitar email, também funciona
+      const emailFormat = loginUser.includes('@') ? loginUser : loginToEmail(loginUser);
+      await signIn(emailFormat, loginPassword);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/auth`
       });
-      
       if (error) throw error;
-      
-      toast({
-        title: "Email enviado",
-        description: "Verifique sua caixa de entrada para redefinir sua senha.",
-      });
-      
+      toast({ title: "Email enviado", description: "Verifique sua caixa de entrada para redefinir sua senha." });
       setShowPasswordReset(false);
       setResetEmail('');
     } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -106,12 +95,7 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                    variant="hero"
-                  >
+                  <Button type="submit" className="w-full" disabled={isLoading} variant="hero">
                     {isLoading ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     ) : (
@@ -119,12 +103,7 @@ const Auth = () => {
                     )}
                     Enviar Link de Redefinição
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => setShowPasswordReset(false)}
-                  >
+                  <Button type="button" variant="outline" className="w-full" onClick={() => setShowPasswordReset(false)}>
                     Voltar ao Login
                   </Button>
                 </div>
@@ -154,12 +133,7 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                    variant="hero"
-                  >
+                  <Button type="submit" className="w-full" disabled={isLoading} variant="hero">
                     {isLoading ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     ) : (
@@ -167,13 +141,7 @@ const Auth = () => {
                     )}
                     Entrar
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => setShowPasswordReset(true)}
-                    disabled
-                  >
+                  <Button type="button" variant="outline" className="w-full" onClick={() => setShowPasswordReset(true)} disabled>
                     Esqueci minha senha (Fora do ar)
                   </Button>
                 </div>
