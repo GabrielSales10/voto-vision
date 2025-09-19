@@ -168,28 +168,26 @@ const UsuariosManager = () => {
 
         const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`;
 
-        const resp = await fetch(fnUrl, {
+        const { data: fnData, error: fnErr } = await supabase.functions.invoke("admin-create-user", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // precisa estar logado como admin
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
+          body: {
             fullName: nome,
             login,
             password,
             role,
             candidateId: role !== "presidente" && role !== "admin" ? selectedCandidateId : null,
             partyId: role === "presidente" ? selectedPartyId : null,
-            fakeEmailDomain:
-              (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || "example.com",
-          }),
+            fakeEmailDomain: (import.meta as any)?.env?.VITE_AUTH_FAKE_EMAIL_DOMAIN || "example.com",
+          },
         });
 
-        const json = (await resp.json().catch(() => ({}))) as any;
-        if (!resp.ok || json?.error) {
-          throw new Error(json?.error || "Falha ao criar usuário.");
+        if (fnErr) {
+          throw new Error(fnErr.message || "Falha ao criar usuário.");
         }
+
 
         toast({ title: "Sucesso", description: "Usuário criado com sucesso!" });
       }
