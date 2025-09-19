@@ -391,6 +391,45 @@ export type Database = {
           },
         ]
       }
+      regional_neighborhood_map: {
+        Row: {
+          city_id: string | null
+          created_at: string | null
+          id: string
+          neighborhood_name: string
+          regional_id: string
+        }
+        Insert: {
+          city_id?: string | null
+          created_at?: string | null
+          id?: string
+          neighborhood_name: string
+          regional_id: string
+        }
+        Update: {
+          city_id?: string | null
+          created_at?: string | null
+          id?: string
+          neighborhood_name?: string
+          regional_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regional_neighborhood_map_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regional_neighborhood_map_regional_id_fkey"
+            columns: ["regional_id"]
+            isOneToOne: false
+            referencedRelation: "regionais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       secoes: {
         Row: {
           ativo: boolean
@@ -433,6 +472,78 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "zonas_eleitorais"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_candidate_access: {
+        Row: {
+          candidate_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_candidate_access_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_candidate_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_party_access: {
+        Row: {
+          created_at: string | null
+          id: string
+          party_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          party_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          party_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_party_access_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "partidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_party_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -549,6 +660,14 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_user_accessible_candidates: {
+        Args: { user_id: string }
+        Returns: {
+          candidate_id: string
+          candidate_name: string
+          party_name: string
+        }[]
       }
       is_admin: {
         Args: { uid: string }

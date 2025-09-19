@@ -36,10 +36,48 @@ const UsuariosManager = () => {
   const [nome, setNome] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('candidato');
+  const [selectedCandidateId, setSelectedCandidateId] = useState('');
+  const [selectedPartyId, setSelectedPartyId] = useState('');
+  
+  // Lists for selection
+  const [candidatos, setCandidatos] = useState<any[]>([]);
+  const [partidos, setPartidos] = useState<any[]>([]);
 
   useEffect(() => {
     fetchUsuarios();
+    fetchCandidatos();
+    fetchPartidos();
   }, []);
+
+  const fetchCandidatos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('candidatos')
+        .select('id, nome, numero, partidos(nome)')
+        .eq('ativo', true)
+        .order('nome');
+      
+      if (error) throw error;
+      setCandidatos(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar candidatos:', error);
+    }
+  };
+
+  const fetchPartidos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('partidos')
+        .select('id, nome, sigla')
+        .eq('ativo', true)
+        .order('nome');
+      
+      if (error) throw error;
+      setPartidos(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar partidos:', error);
+    }
+  };
 
   const fetchUsuarios = async () => {
     try {
@@ -68,6 +106,8 @@ const UsuariosManager = () => {
     setNome('');
     setPassword('');
     setRole('candidato');
+    setSelectedCandidateId('');
+    setSelectedPartyId('');
     setEditingUsuario(null);
   };
 
@@ -126,6 +166,44 @@ const UsuariosManager = () => {
           title: "Sucesso",
           description: "Usuário criado com sucesso! Ele receberá um email de confirmação.",
         });
+
+        // Create access records after user creation
+        if (!editingUsuario) {
+          setTimeout(async () => {
+            try {
+              // Get the created user profile
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('user_id')
+                .eq('email', email)
+                .single();
+
+              if (profile) {
+                // Create candidate access if role requires it
+                if (role !== 'presidente' && selectedCandidateId) {
+                  await supabase
+                    .from('user_candidate_access')
+                    .insert({
+                      user_id: profile.user_id,
+                      candidate_id: selectedCandidateId
+                    });
+                }
+
+                // Create party access if role is presidente
+                if (role === 'presidente' && selectedPartyId) {
+                  await supabase
+                    .from('user_party_access')
+                    .insert({
+                      user_id: profile.user_id,
+                      party_id: selectedPartyId
+                    });
+                }
+              }
+            } catch (error) {
+              console.error('Erro ao criar acesso:', error);
+            }
+          }, 2000); // Wait longer for profile creation
+        }
       }
 
       setDialogOpen(false);
@@ -306,6 +384,53 @@ const UsuariosManager = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                
+                {/* Candidate Selection - Show for non-president roles */}
+                {role !== 'presidente' && role !== 'admin' && !editingUsuario && (
+                  <div className="space-y-2">
+                    <Label htmlFor="candidate">Candidato</Label>
+                    <Select value={selectedCandidateId} onValueChange={setSelectedCandidateId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o candidato" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {candidatos.map((candidato) => (
+                          <SelectItem key={candidato.id} value={candidato.id}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{candidato.nome}</span>
+                              {candidato.numero && (
+                                <Badge variant="outline">{candidato.numero}</Badge>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Party Selection - Show for president role */}
+                {role === 'presidente' && !editingUsuario && (
+                  <div className="space-y-2">
+                    <Label htmlFor="party">Partido</Label>
+                    <Select value={selectedPartyId} onValueChange={setSelectedPartyId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o partido" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {partidos.map((partido) => (
+                          <SelectItem key={partido.id} value={partido.id}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{partido.nome}</span>
+                              <Badge variant="outline">{partido.sigla}</Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
                 <div className="flex justify-end gap-2">
                   <Button 
                     type="button" 
