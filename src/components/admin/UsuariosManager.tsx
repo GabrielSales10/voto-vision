@@ -168,7 +168,7 @@ const UsuariosManager = () => {
 
         const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`;
 
-        const { data: fnData, error: fnErr } = await supabase.functions.invoke("quick-responder", {
+        const { data: fnData, error: fnErr } = await supabase.functions.invoke("admin-create-user", {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: {
